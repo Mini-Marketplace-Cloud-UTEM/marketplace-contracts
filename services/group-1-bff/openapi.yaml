@@ -1,0 +1,964 @@
+openapi: 3.0.3
+info:
+  title: Marketplace BFF API
+  description: |
+    Contrato API para el grupo Frontend Marketplace (BFF - Backend for Frontend).
+    Este contrato define todos los endpoints que consume el frontend React del marketplace.
+
+    ## Grupos integrados
+    - **Grupo 2** – Autenticación (login/logout/token)
+    - **Grupo 3** – Catálogo (búsqueda y paginación de productos)
+    - **Grupo 4** – Carro de compras
+    - **Grupo 5** – Pedidos
+
+    ## Autenticación
+    Todos los endpoints (excepto `/auth/login`) requieren un Bearer Token JWT en el header `Authorization`.
+  version: 1.0.0
+  contact:
+    name: Grupo 1 – Frontend Marketplace
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.marketplace.dev/v1
+    description: Servidor de desarrollo
+  - url: https://api.marketplace.staging/v1
+    description: Servidor de staging
+  - url: https://api.marketplace.com/v1
+    description: Servidor de producción
+
+tags:
+  - name: Auth
+    description: Autenticación de usuarios (integra con Grupo 2)
+  - name: Catalog
+    description: Búsqueda y paginación del catálogo (integra con Grupo 3)
+  - name: Cart
+    description: Gestión del carro de compras (integra con Grupo 4)
+  - name: Orders
+    description: Generación y seguimiento de pedidos (integra con Grupo 5)
+
+paths:
+
+  # ── AUTH ──────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      description: |
+        Autentica al usuario con sus credenciales y retorna un JWT de acceso
+        más un refresh token. El frontend almacena el `accessToken` en memoria
+        (no en localStorage) y el `refreshToken` en una cookie HttpOnly.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: usuario@ejemplo.com
+              password: "MiContraseña123"
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión
+      description: Invalida el refresh token del usuario en el servidor.
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Sesión cerrada correctamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Renovar access token
+      description: |
+        Usa el refresh token (enviado automáticamente via cookie HttpOnly)
+        para emitir un nuevo `accessToken` sin pedir credenciales al usuario.
+      operationId: refreshToken
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Obtener perfil del usuario autenticado
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── CATALOG ───────────────────────────────────────────────────────────
+  /products:
+    get:
+      tags: [Catalog]
+      summary: Buscar y paginar productos
+      description: |
+        Endpoint principal del catálogo. Permite buscar por texto, filtrar
+        por categoría y precio, y paginar los resultados. El BFF agrega y
+        normaliza la respuesta del Grupo 3 antes de entregarla al frontend.
+      operationId: getProducts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Texto de búsqueda (nombre o descripción del producto)
+          required: false
+          schema:
+            type: string
+            example: zapatillas
+        - name: category
+          in: query
+          description: Filtrar por categoría
+          required: false
+          schema:
+            type: string
+            example: calzado
+        - name: minPrice
+          in: query
+          description: Precio mínimo (CLP)
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            example: 5000
+        - name: maxPrice
+          in: query
+          description: Precio máximo (CLP)
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            example: 100000
+        - name: page
+          in: query
+          description: Número de página (base 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Cantidad de productos por página
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Campo de ordenación
+          required: false
+          schema:
+            type: string
+            enum: [price_asc, price_desc, name_asc, name_desc, newest]
+            default: newest
+      responses:
+        '200':
+          description: Lista paginada de productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/{productId}:
+    get:
+      tags: [Catalog]
+      summary: Obtener detalle de un producto
+      operationId: getProductById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle del producto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /categories:
+    get:
+      tags: [Catalog]
+      summary: Listar categorías disponibles
+      description: Retorna el árbol de categorías para los filtros del catálogo.
+      operationId: getCategories
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de categorías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── CART ──────────────────────────────────────────────────────────────
+  /cart:
+    get:
+      tags: [Cart]
+      summary: Obtener carro del usuario
+      description: Retorna el carro de compras activo del usuario autenticado.
+      operationId: getCart
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Carro de compras
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Cart]
+      summary: Vaciar carro
+      operationId: clearCart
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Carro vaciado correctamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /cart/items:
+    post:
+      tags: [Cart]
+      summary: Agregar producto al carro
+      description: |
+        Agrega un producto al carro. Si el producto ya existe en el carro,
+        incrementa la cantidad. Retorna el carro actualizado.
+      operationId: addCartItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+            example:
+              productId: "b3d2a1c0-1234-5678-abcd-ef0123456789"
+              quantity: 2
+      responses:
+        '200':
+          description: Carro actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: INSUFFICIENT_STOCK
+                message: "No hay suficiente stock para la cantidad solicitada"
+
+  /cart/items/{productId}:
+    patch:
+      tags: [Cart]
+      summary: Actualizar cantidad de un ítem
+      operationId: updateCartItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartItemRequest'
+      responses:
+        '200':
+          description: Carro actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Cart]
+      summary: Eliminar producto del carro
+      operationId: removeCartItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Carro actualizado tras eliminar el ítem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── ORDERS ────────────────────────────────────────────────────────────
+  /orders:
+    post:
+      tags: [Orders]
+      summary: Generar un pedido
+      description: |
+        Convierte el carro activo del usuario en un pedido. El BFF orquesta:
+        1. Validación de stock con Grupo 3.
+        2. Creación del pedido en Grupo 5.
+        3. Limpieza del carro en Grupo 4.
+      operationId: createOrder
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Pedido creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Conflicto de stock o carro vacío
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags: [Orders]
+      summary: Listar pedidos del usuario
+      operationId: getOrders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+      responses:
+        '200':
+          description: Lista paginada de pedidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      summary: Obtener estado de un pedido
+      description: Retorna el detalle y estado actual de un pedido específico.
+      operationId: getOrderById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle del pedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─────────────────────────────────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT emitido por el endpoint /auth/login
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Correo electrónico del usuario
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Contraseña del usuario
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT de corta duración (15 min) para autenticar requests
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresIn:
+          type: integer
+          description: Tiempo de vida del accessToken en segundos
+          example: 900
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    RefreshResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          example: 900
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Catalog ───────────────────────────────────
+    ProductSummary:
+      type: object
+      description: Versión compacta del producto para listados
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Zapatillas Running Pro
+        slug:
+          type: string
+          example: zapatillas-running-pro
+        price:
+          type: number
+          format: float
+          example: 49990
+        currency:
+          type: string
+          enum: [CLP, USD]
+          default: CLP
+        imageUrl:
+          type: string
+          format: uri
+        category:
+          type: string
+          example: calzado
+        inStock:
+          type: boolean
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            images:
+              type: array
+              items:
+                type: string
+                format: uri
+            stock:
+              type: integer
+              minimum: 0
+            attributes:
+              type: object
+              additionalProperties:
+                type: string
+              example:
+                talla: "42"
+                color: negro
+                material: mesh
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ProductPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        filters:
+          type: object
+          description: Filtros aplicados en la búsqueda actual
+          properties:
+            q:
+              type: string
+              nullable: true
+            category:
+              type: string
+              nullable: true
+            minPrice:
+              type: number
+              nullable: true
+            maxPrice:
+              type: number
+              nullable: true
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Calzado
+        slug:
+          type: string
+          example: calzado
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    # ── Cart ──────────────────────────────────────
+    CartItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        unitPrice:
+          type: number
+          format: float
+        quantity:
+          type: integer
+          minimum: 1
+        subtotal:
+          type: number
+          format: float
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalItems:
+          type: integer
+        totalPrice:
+          type: number
+          format: float
+        currency:
+          type: string
+          enum: [CLP, USD]
+          default: CLP
+        updatedAt:
+          type: string
+          format: date-time
+
+    AddCartItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+
+    UpdateCartItemRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+
+    # ── Orders ────────────────────────────────────
+    OrderStatus:
+      type: string
+      enum:
+        - PENDING
+        - CONFIRMED
+        - PROCESSING
+        - SHIPPED
+        - DELIVERED
+        - CANCELLED
+      description: |
+        - PENDING: Pedido creado, esperando confirmación de pago
+        - CONFIRMED: Pago confirmado, en preparación
+        - PROCESSING: En bodega, siendo preparado
+        - SHIPPED: Despachado al courier
+        - DELIVERED: Entregado al cliente
+        - CANCELLED: Pedido cancelado
+
+    OrderItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        unitPrice:
+          type: number
+          format: float
+        quantity:
+          type: integer
+        subtotal:
+          type: number
+          format: float
+
+    ShippingAddress:
+      type: object
+      required: [street, city, region, country]
+      properties:
+        street:
+          type: string
+          example: Av. Providencia 1234, Depto 5B
+        city:
+          type: string
+          example: Santiago
+        region:
+          type: string
+          example: Region Metropolitana
+        country:
+          type: string
+          example: Chile
+        postalCode:
+          type: string
+          nullable: true
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        totalItems:
+          type: integer
+        subtotal:
+          type: number
+          format: float
+        shippingCost:
+          type: number
+          format: float
+        total:
+          type: number
+          format: float
+        currency:
+          type: string
+          enum: [CLP, USD]
+          default: CLP
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        estimatedDelivery:
+          type: string
+          format: date
+          nullable: true
+
+    CreateOrderRequest:
+      type: object
+      required: [shippingAddress]
+      properties:
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        notes:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Comentarios opcionales para el pedido
+
+    OrderPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # ── Shared ────────────────────────────────────
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        totalItems:
+          type: integer
+          example: 158
+        totalPages:
+          type: integer
+          example: 8
+        hasNextPage:
+          type: boolean
+        hasPrevPage:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Código de error legible por máquina
+          example: RESOURCE_NOT_FOUND
+        message:
+          type: string
+          description: Descripción legible para el desarrollador
+          example: El recurso solicitado no fue encontrado
+        details:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+          description: Lista de errores de validación por campo (solo en 400)
+
+  responses:
+
+    BadRequest:
+      description: Solicitud mal formada o datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VALIDATION_ERROR
+            message: "Datos de entrada inválidos"
+            details:
+              - field: email
+                message: "Debe ser un correo electrónico válido"
+
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: "Token de acceso inválido o expirado"
+
+    Forbidden:
+      description: El usuario no tiene permisos para este recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: "No tienes permiso para acceder a este recurso"
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: RESOURCE_NOT_FOUND
+            message: "El recurso solicitado no fue encontrado"
+
+    TooManyRequests:
+      description: Demasiadas solicitudes (rate limit)
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Segundos hasta que se pueda reintentar
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: RATE_LIMIT_EXCEEDED
+            message: "Demasiados intentos. Intenta nuevamente en 60 segundos"
