@@ -43,6 +43,9 @@ npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
   líderes de grupo en la reunión.
 - `matriz-conflictos-contratos.md` — tabla de referencia rápida: qué
   contrato existe hoy y en qué choca cada uno contra los demás.
+- `decisiones-ejecutivas-2026-06-19.md` — las 9 decisiones que resuelven
+  los conflictos de la matriz, listas para validar satisfacción de cada
+  grupo en la reunión.
 
 ## Cómo subir tu contrato
 

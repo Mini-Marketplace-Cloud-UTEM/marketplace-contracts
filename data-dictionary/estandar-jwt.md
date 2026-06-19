@@ -1,8 +1,8 @@
 # Estándar de validación de JWT entre servicios
 
-**Decisión ejecutiva — Grupo 1, 2026-06-19.** Pendiente de validar con
-los demás grupos en la próxima reunión, pero se adopta como estándar de
-trabajo desde ya.
+**Decisión ejecutiva — Grupo 1, 2026-06-19, confirmada.** Se presenta en
+la próxima reunión para validar satisfacción de los demás grupos, pero se
+adopta como estándar de trabajo desde ya — no es un debate abierto.
 
 ## Problema
 

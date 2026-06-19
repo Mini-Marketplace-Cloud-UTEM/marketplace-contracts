@@ -18,7 +18,7 @@ Convención de esta tabla: ✅ = ya implementado así por el grupo dueño,
 | `name` | string | ⚠️ Nuestro contrato BFF pedía `firstName`/`lastName` separados; G2 solo tiene `name` único. El BFF se adapta a `name` único. |
 | `email` | string (email) | ✅ |
 | `phone` | string | ✅ (G2 lo tiene, falta agregarlo a nuestro `UserProfile` del BFF) |
-| `avatarUrl` | string (uri), nullable | ✅ (G2: `avatar_url`, BFF traduce) |
+| `avatarUrl` | string (uri), nullable | ⚠️ G2 expone `avatar_url` (snake_case) — debe migrar a camelCase (decisión 2026-06-19, ver `conventions.md`); mientras tanto el BFF traduce. |
 | `roles` | array de `guest/customer/seller/admin` | ✅ (falta agregarlo a nuestro `UserProfile` del BFF si el frontend necesita diferenciar vistas) |
 | `active` | boolean | ✅ |
 | `createdAt`/`updatedAt` | date-time | ✅ |
@@ -32,7 +32,7 @@ Convención de esta tabla: ✅ = ya implementado así por el grupo dueño,
 | `description` | string | ✅ |
 | `price` | `Money` (integer + CLP) | ⚠️ G3 usa `number` sin restricción — pedir que se declare `integer`. |
 | `stock` | integer | ⚠️ G3 lo llama `stock_visible`. |
-| `categoryId` / `categoryName` | uuid / string | ✅ (snake_case en G3, BFF traduce) |
+| `categoryId` / `categoryName` | uuid / string | ⚠️ G3 expone snake_case — debe migrar a camelCase (decisión 2026-06-19); mientras tanto el BFF traduce. |
 | `sku` | string | ✅ |
 | `status` | `ACTIVE/INACTIVE/DELETED` | ✅ |
 | `images` | array de uri | ✅ |
@@ -56,7 +56,7 @@ detrás todavía.
 | `userId` | uuid | ✅ |
 | `status` | `ACTIVE/COMPLETED/CLOSED` | ✅ |
 | `items[]` | array de `CartItem` | ✅ |
-| `totalAmount` | `Money` | ⚠️ G4 usa `number/double` + `USD` default — debe ser integer + CLP. |
+| `totalAmount` | `Money` | ⚠️ G4 usa `number/double` + `USD` default — debe ser `integer`, y el enum de moneda debe quedar solo `[CLP]` (decidido 2026-06-19, sin `USD`). |
 | `createdAt`/`updatedAt` | date-time | ✅ |
 
 `CartItem`: `itemId, cartId, productId, name, quantity, unitPrice
@@ -78,7 +78,7 @@ local (inconsistente entre sus propios archivos — ver
 | `shippingAddress` | objeto (street/city/region/country) | A confirmar contra G5 — hoy el dato de dirección viaja en el payload de creación, no como objeto estructurado. |
 | `createdAt`/`updatedAt` | date-time | ✅ (asumido) |
 
-### Mapeo de vocabularios de estado (pendiente de acordar)
+### Mapeo de vocabularios de estado — decidido
 
 Cada grupo definió su propio vocabulario de estado para "lo que le pasa a
 un pedido". Hace falta una tabla de equivalencia explícita:
@@ -92,8 +92,10 @@ un pedido". Hace falta una tabla de equivalencia explícita:
 | `DELIVERED` | `DELIVERED` | — | `DELIVERED` |
 | `CANCELLED` | `CANCELLED` / `FAILED` | `REJECTED`/`CANCELLED` | `CANCELLED`/`FAILED`/`RETURNED` |
 
-Esta tabla es una propuesta de Grupo 1, no un acuerdo confirmado — debe
-validarse con Grupo 5, 6 y 8 en la reunión.
+**Decisión ejecutiva de Grupo 1 (2026-06-19):** se adopta esta tabla como
+la propuesta oficial a presentar en la reunión — se lleva como decisión
+tomada, no como pregunta abierta, y se ajusta solo si Grupo 5, 6 u 8
+levantan una objeción concreta.
 
 ## Payment (dueño: Grupo 8 — Pagos)
 
@@ -118,7 +120,7 @@ que **no está implementado en el código todavía** — ver
 |---|---|---|
 | `shipmentId` | string `SHP-...` | ✅ |
 | `orderId` | string `ORD-YYYYMMDD-NNN` | ✅ (y hoy es UNIQUE — 1 pedido = 1 envío) |
-| `customerName`, `address`, `city` | string | ✅ (snake_case en el JSON real, BFF traduce) |
+| `customerName`, `address`, `city` | string | ⚠️ G6 expone snake_case — debe migrar a camelCase (decisión 2026-06-19); mientras tanto el BFF traduce. |
 | `weightKg` | number | ✅ |
 | `status` | `PENDING/IN_TRANSIT/DELIVERED/CANCELLED/FAILED/RETURNED` | ✅ |
 | `estimatedDelivery` | date-time, nullable | ✅ |

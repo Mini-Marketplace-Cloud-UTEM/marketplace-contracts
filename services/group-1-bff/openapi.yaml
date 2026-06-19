@@ -573,7 +573,7 @@ components:
           example: 49990
         currency:
           type: string
-          enum: [CLP, USD]
+          enum: [CLP]
           default: CLP
         imageUrl:
           type: string
@@ -700,7 +700,7 @@ components:
           type: integer
         currency:
           type: string
-          enum: [CLP, USD]
+          enum: [CLP]
           default: CLP
         updatedAt:
           type: string
@@ -810,7 +810,7 @@ components:
           type: integer
         currency:
           type: string
-          enum: [CLP, USD]
+          enum: [CLP]
           default: CLP
         notes:
           type: string

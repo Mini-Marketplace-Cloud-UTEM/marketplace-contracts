@@ -144,15 +144,27 @@ propio mapeo.
 
 ---
 
-## 4. Resumen para decidir en la reunión
+## 4. Decisiones tomadas (2026-06-19) — a validar con los demás grupos
 
-1. Unificar el campo de error en `code` (G4, G5, G8 deben cambiar).
-2. **Corregir nuestro propio contrato BFF** para que el dinero sea
-   `integer` — hoy no cumplimos la regla que le pedimos a los demás.
-3. Fijar un único patrón de `orderId` (hoy ni los que "ya usan código
-   legible" están de acuerdo entre sí: con fecha vs. sin fecha).
-4. Reconciliar `shared/components.yaml` (`Pagination`) con el `Pagination`
-   real que ya está en el contrato BFF.
-5. Acordar la tabla de equivalencia de estados (pedido/pago/envío) de
-   `canonical-models.md` con G5, G6 y G8.
-6. Resolver quién orquesta el checkout (G4 vs G5 vs BFF).
+Todo lo que antes era "a decidir en la reunión" ya quedó resuelto como
+decisión ejecutiva de Grupo 1. Detalle completo y razonamiento en
+`decisiones-ejecutivas-2026-06-19.md`. Resumen:
+
+1. **Error → `code`** (no `error`), forma corta `{code, message, details?,
+   correlationId?}`, `details` como arreglo `{field, message}`. G4, G5,
+   G8 deben cambiar el campo; G3/G6/G7 deben quitar `timestamp`/`status`.
+2. **Dinero `integer`, moneda solo `[CLP]`** (sin `USD`) — ya corregido en
+   nuestro propio contrato BFF.
+3. **`orderId` = `ORD-YYYYMMDD-NNN`** (con fecha) — G5 y G7 deben migrar.
+4. **Paginación `{page, pageSize, total, totalPages, hasNext, hasPrev}`**
+   — ya reconciliado entre `shared/components.yaml` y el contrato BFF;
+   G3, G6 y G8 deben migrar el suyo.
+5. **Tabla de equivalencia de estados** de `canonical-models.md` aprobada
+   como propuesta oficial.
+6. **G4 orquesta el checkout** — el BFF consume `POST /v1/checkout` de
+   G4 en vez de orquestar él mismo.
+7. **Naming: camelCase obligatorio** en el contrato público de todos los
+   backends (no solo traducción en el BFF) — G2, G3, G5, G6 deben migrar.
+8. **G6 integra hoy contra v1.0**; v1.1 queda como mejora de fase 2.
+9. **JWT: validación centralizada** vía `POST /auth/validate` de G2,
+   confirmado (ver `data-dictionary/estandar-jwt.md`).
