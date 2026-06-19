@@ -153,8 +153,7 @@ paths:
           description: Precio mínimo (CLP)
           required: false
           schema:
-            type: number
-            format: float
+            type: integer
             minimum: 0
             example: 5000
         - name: maxPrice
@@ -162,8 +161,7 @@ paths:
           description: Precio máximo (CLP)
           required: false
           schema:
-            type: number
-            format: float
+            type: integer
             minimum: 0
             example: 100000
         - name: page
@@ -571,8 +569,7 @@ components:
           type: string
           example: zapatillas-running-pro
         price:
-          type: number
-          format: float
+          type: integer
           example: 49990
         currency:
           type: string
@@ -637,10 +634,10 @@ components:
               type: string
               nullable: true
             minPrice:
-              type: number
+              type: integer
               nullable: true
             maxPrice:
-              type: number
+              type: integer
               nullable: true
 
     Category:
@@ -677,14 +674,12 @@ components:
           type: string
           format: uri
         unitPrice:
-          type: number
-          format: float
+          type: integer
         quantity:
           type: integer
           minimum: 1
         subtotal:
-          type: number
-          format: float
+          type: integer
 
     Cart:
       type: object
@@ -702,8 +697,7 @@ components:
         totalItems:
           type: integer
         totalPrice:
-          type: number
-          format: float
+          type: integer
         currency:
           type: string
           enum: [CLP, USD]
@@ -763,13 +757,11 @@ components:
           type: string
           format: uri
         unitPrice:
-          type: number
-          format: float
+          type: integer
         quantity:
           type: integer
         subtotal:
-          type: number
-          format: float
+          type: integer
 
     ShippingAddress:
       type: object
@@ -811,14 +803,11 @@ components:
         totalItems:
           type: integer
         subtotal:
-          type: number
-          format: float
+          type: integer
         shippingCost:
-          type: number
-          format: float
+          type: integer
         total:
-          type: number
-          format: float
+          type: integer
         currency:
           type: string
           enum: [CLP, USD]
@@ -869,15 +858,15 @@ components:
         pageSize:
           type: integer
           example: 20
-        totalItems:
+        total:
           type: integer
           example: 158
         totalPages:
           type: integer
           example: 8
-        hasNextPage:
+        hasNext:
           type: boolean
-        hasPrevPage:
+        hasPrev:
           type: boolean
 
     Error:

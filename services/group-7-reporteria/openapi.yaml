@@ -1,0 +1,242 @@
+openapi: 3.0.3
+info:
+  title: Grupo 7 — Reportería, Batch y Streaming — BORRADOR
+  version: 0.1.0-draft
+  description: |
+    **Este NO es un contrato confirmado por Grupo 7.** Es un punto de
+    partida redactado por Grupo 1 (Frontend/BFF), en rol de coordinación,
+    a partir del único documento de arquitectura que Grupo 7 había
+    publicado (`.docx`, sin OpenAPI real), formalizado aquí como YAML y
+    ajustado a las convenciones de `data-dictionary/conventions.md`
+    (IDs con formato `ORD-YYYYMMDD-NNN`, dinero entero, etc.).
+
+    Grupo 7 debe revisar, ajustar y *adoptar* (o reemplazar) este
+    archivo. Ver detalle en `analisis-integration-hell-2026-06-18.md` §4.8.
+
+servers:
+  - url: http://localhost:8070
+    description: Desarrollo local (placeholder, a confirmar por G7)
+
+tags:
+  - name: Reports
+
+paths:
+
+  /reports/sales:
+    get:
+      tags: [Reports]
+      summary: Resumen financiero consolidado
+      operationId: getSalesReport
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Resumen de ventas del período
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReport'
+        '400':
+          $ref: '../../shared/components.yaml#/components/responses/BadRequest'
+
+  /reports/orders-by-status:
+    get:
+      tags: [Reports]
+      summary: Conteo de pedidos por estado
+      operationId: getOrdersByStatus
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+      responses:
+        '200':
+          description: Conteo por estado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderStatusCount'
+
+  /reports/top-products:
+    get:
+      tags: [Reports]
+      summary: Productos más vendidos
+      operationId: getTopProducts
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Lista paginada de productos más vendidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TopProduct'
+                  pagination:
+                    $ref: '../../shared/components.yaml#/components/schemas/Pagination'
+
+  /reports/batch/recalculate:
+    post:
+      tags: [Reports]
+      summary: Forzar recálculo batch (asíncrono)
+      operationId: triggerBatchRecalculate
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+      responses:
+        '202':
+          description: Recálculo encolado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [QUEUED]
+
+components:
+  parameters:
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+    XConsumer:
+      name: X-Consumer
+      in: header
+      required: false
+      schema:
+        type: string
+        example: group-01
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    OrderId:
+      type: string
+      pattern: '^ORD-\d{8}-\d{3,}$'
+      example: "ORD-20260619-001"
+
+    SalesReport:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        totalSales:
+          type: integer
+        totalOrders:
+          type: integer
+        currency:
+          type: string
+          enum: [CLP]
+          default: CLP
+
+    OrderStatusCount:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+
+    TopProduct:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unitsSold:
+          type: integer
+        revenue:
+          type: integer
+
+# ─────────────────────────────────────────────────────────────────────────
+# EVENTOS — G7 es consumidor puro, no publica eventos propios
+# ─────────────────────────────────────────────────────────────────────────
+x-events:
+  consumed:
+    - eventType: ORDER_CREATED
+      from: Grupo 5
+    - eventType: PAYMENT_APPROVED
+      from: Grupo 8
+    - eventType: INVENTORY_SHORTAGE
+      from: Grupo 4
+    - eventType: SHIPMENT_DELIVERED
+      from: Grupo 6
+      note: >
+        Confirmado por Grupo 8 que este evento llega en snake_case
+        (order_id, customer_name) desde G6 — Grupo 7 debe normalizarlo
+        igual que lo hace G8.

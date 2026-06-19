@@ -11,6 +11,11 @@ contrato REST y de eventos descrito en texto (4 endpoints `GET/POST
 Ver el resumen extraído en `analisis-integration-hell-2026-06-18.md`
 (sección 4.8) en la raíz de este repo.
 
-**Acción pendiente:** Grupo 7 debe formalizar su contrato como
-`openapi.yaml` (y el de eventos si aplica) y subirlo a esta carpeta
-(`services/group-7-reporteria/openapi.yaml`).
+**Actualización 2026-06-19:** Grupo 1 formalizó como `openapi.yaml`
+**borrador** el contrato que ya estaba descrito en el `.docx` de Grupo 7,
+ajustado a las convenciones del proyecto (IDs `ORD-YYYYMMDD-NNN`, dinero
+entero, paginación estándar).
+
+**Acción pendiente:** Grupo 7 debe revisar ese borrador y subir la
+versión final (o una distinta) a
+`services/group-7-reporteria/openapi.yaml`.

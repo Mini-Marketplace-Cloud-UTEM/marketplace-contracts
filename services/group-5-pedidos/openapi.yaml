@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Grupo 5 — Pedidos (Order Management) — BORRADOR
+  version: 0.1.0-draft
+  description: |
+    **Este NO es un contrato confirmado por Grupo 5.** Es un punto de
+    partida redactado por Grupo 1 (Frontend/BFF), en rol de coordinación,
+    a partir de:
+    - La documentación local de Grupo 5 (arquitectura, contrato REST y de
+      eventos), que se contradecía a sí misma en formato de `orderId` y
+      casing de estados.
+    - Lo que Grupo 4 y Grupo 8 ya construyeron asumiendo ciertos campos de
+      Grupo 5 (`orderId`, `status`).
+    - Las convenciones acordadas en `data-dictionary/conventions.md`.
+
+    Grupo 5 debe revisar, ajustar y *adoptar* (o reemplazar) este archivo
+    — no implementarlo a ciegas. Ver el detalle de las contradicciones
+    originales en `analisis-integration-hell-2026-06-18.md` §4.1.
+
+servers:
+  - url: http://localhost:8050
+    description: Desarrollo local (placeholder, a confirmar por G5)
+
+tags:
+  - name: Orders
+
+paths:
+
+  /orders:
+    post:
+      tags: [Orders]
+      summary: Crear un pedido
+      description: >
+        Llamado por el flujo de Checkout (Grupo 4) al confirmar una
+        compra. No valida pago ni stock — eso ya ocurrió antes de llegar
+        aquí (responsabilidad de Grupo 4).
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Pedido creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '../../shared/components.yaml#/components/responses/BadRequest'
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      summary: Obtener un pedido por id
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OrderId'
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
+
+  /orders/{orderId}/status:
+    patch:
+      tags: [Orders]
+      summary: Transicionar el estado de un pedido
+      description: >
+        Usado internamente por la orquestación (ej. cuando Grupo 8
+        confirma el pago, o Grupo 6 marca un envío como entregado).
+      operationId: updateOrderStatus
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/OrderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/OrderStatus'
+      responses:
+        '200':
+          description: Pedido actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
+        '409':
+          description: Transición de estado no permitida
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
+
+  /users/{userId}/orders:
+    get:
+      tags: [Orders]
+      summary: Listar pedidos de un usuario
+      operationId: getOrdersByUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Lista paginada de pedidos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  pagination:
+                    $ref: '../../shared/components.yaml#/components/schemas/Pagination'
+
+components:
+  schemas:
+
+    OrderId:
+      type: string
+      pattern: '^ORD-\d{8}-\d{3,}$'
+      description: >
+        Formato acordado: `ORD-YYYYMMDD-NNN`. Reemplaza los 3 formatos
+        distintos que existían en la documentación previa de G5
+        (`ord-20260616-1155`, `ord_20260616_1155`, uuid interno).
+      example: "ORD-20260619-001"
+
+    OrderStatus:
+      type: string
+      enum:
+        - CREATED
+        - PAYMENT_PENDING
+        - PAID
+        - STOCK_RESERVED
+        - READY_TO_SHIP
+        - SHIPPED
+        - DELIVERED
+        - CANCELLED
+        - FAILED
+      description: >
+        Vocabulario propio de G5 (más granular que `OrderStatus` del BFF
+        a propósito — el BFF colapsa estos 9 estados en los 6 suyos para
+        el frontend, ver tabla de mapeo en `canonical-models.md`).
+        Siempre UPPER_SNAKE_CASE — la documentación previa mezclaba
+        mayúsculas y minúsculas, eso queda corregido aquí.
+
+    OrderItem:
+      type: object
+      required: [productId, name, quantity, unitPrice, subtotal]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPrice:
+          type: integer
+        subtotal:
+          type: integer
+
+    ShippingAddress:
+      type: object
+      required: [street, city, region, country]
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        postalCode:
+          type: string
+          nullable: true
+
+    CreateOrderRequest:
+      type: object
+      required: [userId, items, shippingAddress]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        notes:
+          type: string
+          nullable: true
+
+    Order:
+      type: object
+      required: [orderId, userId, status, items, totalAmount, currency, createdAt, updatedAt]
+      properties:
+        orderId:
+          $ref: '#/components/schemas/OrderId'
+        userId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        subtotal:
+          type: integer
+        shippingCost:
+          type: integer
+        totalAmount:
+          type: integer
+        currency:
+          type: string
+          enum: [CLP]
+          default: CLP
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+  responses: {}
+
+# ─────────────────────────────────────────────────────────────────────────
+# EVENTOS (asíncronos) — borrador, mismo criterio que el contrato REST
+# ─────────────────────────────────────────────────────────────────────────
+x-events:
+  description: >
+    Eventos publicados por G5 hacia Grupo 7 (Reportería) y Grupo 8
+    (Notificaciones), usando el sobre `EventEnvelope` de
+    `shared/components.yaml`.
+  published:
+    - eventType: ORDER_CREATED
+      payload: { orderId: OrderId, userId: uuid, status: OrderStatus, totalAmount: integer, currency: string, items: OrderItem[] }
+    - eventType: ORDER_CANCELLED
+      payload: { orderId: OrderId, userId: uuid, status: OrderStatus }

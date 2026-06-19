@@ -12,15 +12,18 @@ marketplace-contracts/
 │   └── components.yaml          # Error, Pagination, Money, EventEnvelope (reutilizar con $ref)
 ├── data-dictionary/
 │   ├── conventions.md           # reglas obligatorias (IDs, dinero, error, naming, paginación...)
-│   └── canonical-models.md      # entidades compartidas (User, Product, Order, Payment...)
+│   ├── canonical-models.md      # entidades compartidas (User, Product, Order, Payment...)
+│   ├── contratos-mock.md        # cómo levantar un mock (Prism) mientras no hay servicio real
+│   └── estandar-jwt.md          # cómo se valida el JWT entre servicios
+├── registro-de-servicios.md     # tabla de URLs reales (Render) por grupo — incompleta a propósito
 └── services/
     ├── group-1-bff/openapi.yaml         # Frontend / BFF
     ├── group-2-auth/openapi.yaml        # Auth (login, JWT)
     ├── group-3-catalogo/openapi.yaml    # Catálogo de productos
     ├── group-4-carrito/openapi.yaml     # Carro, checkout, inventario, concurrencia
-    ├── group-5-pedidos/                 # Pedidos — sin contrato real todavía (ver README ahí)
+    ├── group-5-pedidos/openapi.yaml     # Pedidos — BORRADOR redactado por Grupo 1, pendiente que G5 lo adopte/ajuste
     ├── group-6-despacho/                # Despacho — sin openapi.yaml formal todavía (ver README ahí)
-    ├── group-7-reporteria/              # Reportería, bash, streaming — sin openapi.yaml todavía
+    ├── group-7-reporteria/openapi.yaml  # Reportería — BORRADOR redactado por Grupo 1, pendiente que G7 lo adopte/ajuste
     └── group-8-pagos/openapi.yaml       # Pago simulado y notificaciones
 ```
 
@@ -38,6 +41,8 @@ npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
   desincronización entre todos los grupos y plan de remediación.
 - `guia-organizacion-y-contratos.md` — guía corta para presentar a los
   líderes de grupo en la reunión.
+- `matriz-conflictos-contratos.md` — tabla de referencia rápida: qué
+  contrato existe hoy y en qué choca cada uno contra los demás.
 
 ## Cómo subir tu contrato
 

@@ -1,0 +1,158 @@
+# Matriz de contratos y conflictos
+
+**Fecha:** 2026-06-18
+**Objetivo:** referencia rápida — qué contrato tiene cada grupo hoy, y en
+qué choca contra los demás. El detalle narrativo de cada hallazgo está en
+`analisis-integration-hell-2026-06-18.md`; este documento es la versión
+tabla, para consulta rápida en la reunión.
+
+---
+
+## 1. Inventario: qué contrato existe hoy
+
+| Grupo | Servicio | Fuente real | Estado |
+|---|---|---|---|
+| 1 | Frontend/BFF | `services/group-1-bff/openapi.yaml` | ✅ Completo, propio |
+| 2 | Auth | `services/group-2-auth/openapi.yaml` | ✅ Completo (repo `Grupo2_IdentidadUsuario`) |
+| 3 | Catálogo | `services/group-3-catalogo/openapi.yaml` | ✅ Completo (repo `grupo-3-CATALOGO`) |
+| 4 | Carro/Checkout/Inventario | `services/group-4-carrito/openapi.yaml` | ✅ Completo (repo `G4`) |
+| 5 | Pedidos | — | 🆕 **No existe.** Solo docs locales que se contradicen entre sí. |
+| 6 | Despacho | — | ⚠️ Código real (`G6-Shipment-Service`) implementa v1.0; documentación dice v1.1. Ningún `openapi.yaml` formal todavía. |
+| 7 | Reportería | — | 🆕 Solo un `.docx` de arquitectura con contrato embebido, sin OpenAPI real. |
+| 8 | Pagos/Notificaciones | `services/group-8-pagos/openapi.yaml` | ✅ Completo (repo `G8-Pagos-y-Notificaciones`) |
+
+---
+
+## 2. Matriz por dimensión
+
+### 2.1 Formato de `errorResponse`
+
+| Grupo | Forma real | Campo de error | ¿Coincide con la convención (`code`)? |
+|---|---|---|---|
+| 1 (BFF) | `{code, message, details?}` | `code` | ✅ (es la convención propuesta) |
+| 2 | `{code, message}` | `code` | ✅ (le falta `details`, no es grave) |
+| 3 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ (campos extra, no rompe) |
+| 4 | `{error, message, details?}` | **`error`** | ❌ |
+| 5 | `{error_code, message}` | **`error_code`** | ❌ (un tercer nombre distinto) |
+| 6 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ |
+| 7 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ |
+| 8 | `{error, message, details?}` | **`error`** | ❌ |
+
+**Choque:** 3 nombres de campo distintos para lo mismo (`code` /
+`error` / `error_code`). 5 de 8 ya usan `code` — pedir a G4, G5 y G8 que
+se alineen.
+
+### 2.2 Dinero (tipo y moneda)
+
+| Grupo | Tipo | Moneda default | ¿Cumple "entero + CLP"? |
+|---|---|---|---|
+| 1 (BFF) | `number/float` | CLP (implícito) | ❌ **Nuestro propio contrato no cumple su propia regla** — `ProductSummary.price`, `Cart.totalPrice`, `Order.total`, etc. están declarados `float`, no `integer`. |
+| 2 | N/A (no maneja dinero) | — | — |
+| 3 | `number` (sin restricción) | CLP (implícito) | ⚠️ Ambiguo, no fuerza integer |
+| 4 | `number/double` | **USD** | ❌ |
+| 5 | sin tipo declarado (ejemplos vienen enteros) | CLP (implícito) | ⚠️ A confirmar cuando exista contrato real |
+| 6 | `INTEGER` (`shipping_cost`, v1.1 — no implementado en código real) | CLP | ✅ (en el papel; v1.0 real no maneja dinero) |
+| 7 | `integer` (`totalAmount`, `amountPaid`) | CLP (implícito) | ✅ |
+| 8 | `number/double` | CLP (enum cerrado) | ❌ |
+
+**Choque:** ni nosotros mismos cumplimos la regla que le exigimos a los
+demás. Hay que corregir el contrato BFF antes de pedirle a G4/G8 que
+corrijan el suyo — si no, perdemos autoridad para exigirlo.
+
+### 2.3 Formato de IDs de negocio (`orderId` y similares)
+
+| Grupo | Formato usado | Ejemplo |
+|---|---|---|
+| 1 (BFF) | uuid (a cambiar, ver `conventions.md`) | `b3d2a1c0-1234-...` |
+| 5 | **3 formatos distintos dentro del mismo grupo** | `ord-20260616-1155` / `ord_20260616_1155` / uuid (en su modelo de BD) |
+| 6 | string libre, sin formato impuesto por el servicio; en ejemplos usa el mismo patrón que G8 | `ORD-20260611-001` |
+| 7 | código secuencial sin fecha | `ORD-1001` |
+| 8 | código con fecha | `ORD-20260611-001` |
+
+**Choque:** ni los grupos que "ya usan código legible" (6, 7, 8) están de
+acuerdo en el patrón exacto — G7 usa un secuencial simple (`ORD-1001`),
+G6 y G8 usan fecha+secuencial (`ORD-20260611-001`). Hay que fijar **un**
+patrón único antes de que más grupos construyan validaciones contra el
+formato equivocado.
+
+### 2.4 Naming (camelCase vs snake_case) — no es solo "el BFF traduce"
+
+| Grupo | Casing real en su contrato público |
+|---|---|
+| 1 (BFF) | camelCase |
+| 2 | snake_case |
+| 3 | snake_case |
+| 4 | **camelCase** |
+| 5 | snake_case |
+| 6 | snake_case |
+| 7 | camelCase en el envelope de eventos, **snake_case en el evento `ShipmentDelivered`** (inconsistente dentro del mismo documento) |
+| 8 | **camelCase** |
+
+**Choque (no detectado en el análisis anterior):** la suposición de que
+"todos los backends usan snake_case y el BFF traduce" es **falsa** — G4 y
+G8 ya exponen camelCase en su contrato público por su cuenta. Esto es
+bueno (cumplen la convención) pero significa que el BFF no puede aplicar
+una regla de traducción uniforme a todos los servicios; tiene que
+saber, servicio por servicio, si necesita traducir o no.
+
+### 2.5 Paginación — 5 formas distintas en 8 grupos
+
+| Grupo | Forma |
+|---|---|
+| 1 (BFF) | `{page, pageSize, totalItems, totalPages, hasNextPage, hasPrevPage}` |
+| 3 | `{data, pagination: {page, size, total, totalPages, hasNext, hasPrev}}` |
+| 4 | N/A (no expone listados paginados) |
+| 5 | **Sin paginación** — `GET /users/{user_id}/orders` devuelve un arreglo plano |
+| 6 | `{total, limit, offset, shipments: [...]}` — usa `limit/offset`, no `page/pageSize`, y no envuelve en `{data, pagination}` |
+| 8 | `{data, pagination: {page, size, total}}` (sin `totalPages`/`hasNext`/`hasPrev`) |
+
+**Choque adicional:** el `shared/components.yaml` que ya publicamos
+define `Pagination` como `{page, pageSize, total, totalPages, hasNext,
+hasPrev}` — que **tampoco coincide exactamente** con el `Pagination` que
+ya está en nuestro propio `services/group-1-bff/openapi.yaml`
+(`totalItems`/`hasNextPage`/`hasPrevPage`). Hay que reconciliar esto
+antes de pedirle a los demás que adopten el esquema compartido.
+
+### 2.6 Vocabulario de estado de pedido/pago/envío
+
+| Concepto | Vocabulario | Grupo |
+|---|---|---|
+| Estado de pedido (BFF) | `PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED` | 1 |
+| Estado de pedido (doc arquitectura) | `CREATED, PAYMENT_PENDING, PAID, STOCK_RESERVED, READY_TO_SHIP, SHIPPED, DELIVERED, CANCELLED, FAILED` | 5 |
+| Estado de pedido (ejemplos REST/eventos, **minúsculas**) | `created, paid, cancelled, ...` | 5 (contradice su propio doc de arquitectura) |
+| Estado de pago | `PENDING, APPROVED, REJECTED, CANCELLED` | 8 |
+| Estado de envío | `PENDING, IN_TRANSIT, DELIVERED, CANCELLED, FAILED, RETURNED` | 6 |
+
+**Choque:** 4 vocabularios distintos para describir el ciclo de vida de
+"lo mismo" (un pedido, desde que se crea hasta que llega). Sin una tabla
+de equivalencia explícita (propuesta en
+`data-dictionary/canonical-models.md`), cada integración va a inventar su
+propio mapeo.
+
+---
+
+## 3. Choques específicos entre pares de grupos (no solo vs. convención)
+
+| Choque | Entre | Detalle |
+|---|---|---|
+| ¿Quién orquesta el checkout? | G4 ↔ G5 ↔ BFF | G4 ya llama a G5 al confirmar checkout; nuestro contrato BFF asume que el BFF orquesta todo — hay que alinear (`analisis-integration-hell` §4.7). |
+| Documentación vs. código real | G6 (consigo mismo) | El código implementa v1.0; README y docs dicen v1.1. Nadie fuera de G6 puede confiar en la documentación sin mirar el código (`analisis-integration-hell` §4.5). |
+| Interpretación de contratos ajenos desactualizada | G6 → G1/G4/G5/G7/G8 | G6 escribió su propia versión de los contratos de los demás (`v1.1/*.md`) y ya no coincide con la realidad (`analisis-integration-hell` §4.6). |
+| Documento de diseño vs. contrato real | G2, G3 (parcial), G4 (JSON viejo), G8 | Cada uno tiene un PDF/DOCX/JSON que no coincide con su propio OpenAPI real — riesgo de que alguien implemente mirando el documento viejo. |
+| `UserProfile.name` único vs. separado | G2 ↔ BFF | G2 expone `name` único; nuestro contrato pedía `firstName`/`lastName`. |
+| Moneda CLP vs. USD en el mismo total | G4 ↔ G6 (cotización envío) | G6 cotiza en CLP entero; G4 suma todo en USD float — el total del carrito quedaría mezclando ambas. |
+
+---
+
+## 4. Resumen para decidir en la reunión
+
+1. Unificar el campo de error en `code` (G4, G5, G8 deben cambiar).
+2. **Corregir nuestro propio contrato BFF** para que el dinero sea
+   `integer` — hoy no cumplimos la regla que le pedimos a los demás.
+3. Fijar un único patrón de `orderId` (hoy ni los que "ya usan código
+   legible" están de acuerdo entre sí: con fecha vs. sin fecha).
+4. Reconciliar `shared/components.yaml` (`Pagination`) con el `Pagination`
+   real que ya está en el contrato BFF.
+5. Acordar la tabla de equivalencia de estados (pedido/pago/envío) de
+   `canonical-models.md` con G5, G6 y G8.
+6. Resolver quién orquesta el checkout (G4 vs G5 vs BFF).
