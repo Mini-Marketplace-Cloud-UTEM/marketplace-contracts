@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: API de Despacho y Logística — Grupo 6
+  description: |
+    Servicio de gestión de despachos.
+    
+    ### Máquina de Estados
+    - **PENDING**: Envío creado, a la espera de recolección.
+    - **IN_TRANSIT**: El paquete está en ruta hacia su destino.
+    - **DELIVERED**: Entregado exitosamente.
+    - **CANCELLED**: Cancelado antes del envío.
+    - **FAILED**: Fallo en la entrega (ej. dirección no encontrada).
+    - **RETURNED**: Devuelto al origen tras fallo.
+  version: 1.1.0
+
+servers:
+  - url: https://g6-despacho.onrender.com/api/v1
+    description: Mock Server
+
+components:
+  schemas:
+    DimensionsCm:
+      type: object
+      required: [length, width, height]
+      properties:
+        length:
+          type: number
+          format: float
+        width:
+          type: number
+          format: float
+        height:
+          type: number
+          format: float
+
+    PackageInput:
+      type: object
+      required: [originCd, weightKg, dimensionsCm]
+      properties:
+        originCd:
+          type: string
+          enum: [NORTE, CENTRO, SUR]
+        weightKg:
+          type: number
+          format: float
+        dimensionsCm:
+          $ref: '#/components/schemas/DimensionsCm'
+
+    QuoteRequest:
+      type: object
+      required: [city, packages]
+      properties:
+        city:
+          type: string
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageInput'
+
+    QuoteResponse:
+      type: object
+      required: [totalShippingCost, currency]
+      properties:
+        totalShippingCost:
+          type: integer
+        currency:
+          type: string
+          default: CLP
+
+    ShipmentCreate:
+      type: object
+      required: [orderId, customerName, address, city, packages]
+      properties:
+        orderId:
+          type: string
+        customerName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageInput'
+
+    ShipmentResponse:
+      type: object
+      required: [shipmentId, orderId, customerName, address, city, originCd, volumetricWeight, shippingCost, weightKg, status, createdAt, updatedAt]
+      properties:
+        shipmentId:
+          type: string
+        orderId:
+          type: string
+        customerName:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        originCd:
+          type: string
+          enum: [NORTE, CENTRO, SUR]
+        volumetricWeight:
+          type: number
+          format: float
+        shippingCost:
+          type: integer
+        weightKg:
+          type: number
+          format: float
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        estimatedDelivery:
+          type: string
+          format: date-time
+          nullable: true
+
+    ShipmentUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ShipmentUpdateResponse:
+      type: object
+      required: [shipmentId, orderId, status, previousStatus, updatedAt]
+      properties:
+        shipmentId:
+          type: string
+        orderId:
+          type: string
+        status:
+          type: string
+        previousStatus:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+  parameters:
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      schema:
+        type: string
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: true
+      schema:
+        type: string
+    XConsumer:
+      name: X-Consumer
+      in: header
+      required: true
+      schema:
+        type: string
+
+paths:
+  /shipments/quotes:
+    post:
+      summary: Cotizar un envío multi-paquete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        '200':
+          description: Cotización exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+
+  /shipments:
+    post:
+      summary: Crear un nuevo despacho multi-paquete
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentCreate'
+      responses:
+        '201':
+          description: Despacho creado (retorna array de IDs)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+    get:
+      summary: Listar despachos (soporta búsqueda por order_id)
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: order_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de despachos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShipmentResponse'
+
+  /shipments/{shipmentId}:
+    get:
+      summary: Obtener un despacho por ID
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: shipmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Despacho encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentResponse'
+
+    patch:
+      summary: Actualizar estado de un despacho
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: shipmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentUpdate'
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentUpdateResponse'
+
+  /shipments/{shipmentId}/history:
+    get:
+      summary: Historial inmutable de estados de un despacho
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+        - name: shipmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de eventos históricos
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
