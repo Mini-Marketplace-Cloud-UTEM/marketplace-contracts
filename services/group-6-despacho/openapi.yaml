@@ -1,0 +1,580 @@
+openapi: 3.1.0
+info:
+  title: API de Despacho y Logística --- Grupo 6
+  description: Servicio de gestión de despachos v1.2
+  version: 1.2.0
+paths:
+  /api/v1/shipments/quotes:
+    post:
+      summary: Quote Shipment
+      operationId: quote_shipment_api_v1_shipments_quotes_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/shipments:
+    post:
+      summary: Create Shipment
+      operationId: create_shipment_api_v1_shipments_post
+      parameters:
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                title: Response Create Shipment Api V1 Shipments Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      summary: Get Shipments
+      operationId: get_shipments_api_v1_shipments_get
+      parameters:
+      - name: order_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Order Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ShipmentStatus'
+          - type: 'null'
+          title: Status
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/shipments/{shipment_id}:
+    get:
+      summary: Get Shipment By Id
+      operationId: get_shipment_by_id_api_v1_shipments__shipment_id__get
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      summary: Update Shipment Status
+      operationId: update_shipment_status_api_v1_shipments__shipment_id__patch
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentUpdateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/shipments/{shipment_id}/history:
+    get:
+      summary: Get Shipment History
+      operationId: get_shipment_history_api_v1_shipments__shipment_id__history_get
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/health:
+    get:
+      summary: Health
+      operationId: health_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    DimensionsCm:
+      properties:
+        length:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Length
+        width:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Width
+        height:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Height
+      type: object
+      required:
+      - length
+      - width
+      - height
+      title: DimensionsCm
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+        service:
+          type: string
+          title: Service
+        version:
+          type: string
+          title: Version
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - status
+      - service
+      - version
+      - timestamp
+      title: HealthResponse
+    OriginCD:
+      type: string
+      enum:
+      - NORTE
+      - CENTRO
+      - SUR
+      title: OriginCD
+    PackageInput:
+      properties:
+        originCd:
+          $ref: '#/components/schemas/OriginCD'
+        weightKg:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Weightkg
+        dimensionsCm:
+          $ref: '#/components/schemas/DimensionsCm'
+      type: object
+      required:
+      - originCd
+      - weightKg
+      - dimensionsCm
+      title: PackageInput
+    QuoteRequest:
+      properties:
+        city:
+          type: string
+          maxLength: 100
+          title: City
+        packages:
+          items:
+            $ref: '#/components/schemas/PackageInput'
+          type: array
+          title: Packages
+      type: object
+      required:
+      - city
+      - packages
+      title: QuoteRequest
+    QuoteResponse:
+      properties:
+        totalShippingCost:
+          type: integer
+          title: Totalshippingcost
+        currency:
+          type: string
+          title: Currency
+          default: CLP
+      type: object
+      required:
+      - totalShippingCost
+      title: QuoteResponse
+    ShipmentCreate:
+      properties:
+        orderId:
+          type: string
+          title: Orderid
+          description: ID único del pedido de G5
+        customerName:
+          type: string
+          maxLength: 200
+          title: Customername
+          description: Nombre del destinatario
+        address:
+          type: string
+          maxLength: 500
+          title: Address
+          description: Dirección física de entrega
+        city:
+          type: string
+          maxLength: 100
+          title: City
+          description: Ciudad de destino
+        packages:
+          items:
+            $ref: '#/components/schemas/PackageInput'
+          type: array
+          title: Packages
+      type: object
+      required:
+      - orderId
+      - customerName
+      - address
+      - city
+      - packages
+      title: ShipmentCreate
+    ShipmentResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        customerName:
+          type: string
+          title: Customername
+        address:
+          type: string
+          title: Address
+        city:
+          type: string
+          title: City
+        originCd:
+          type: string
+          title: Origincd
+        volumetricWeight:
+          type: number
+          title: Volumetricweight
+        shippingCost:
+          type: integer
+          title: Shippingcost
+        weightKg:
+          type: number
+          title: Weightkg
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+        estimatedDelivery:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Estimateddelivery
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - customerName
+      - address
+      - city
+      - originCd
+      - volumetricWeight
+      - shippingCost
+      - weightKg
+      - status
+      - createdAt
+      - updatedAt
+      title: ShipmentResponse
+    ShipmentStatus:
+      type: string
+      enum:
+      - PENDING
+      - IN_TRANSIT
+      - DELIVERED
+      - CANCELLED
+      - FAILED
+      - RETURNED
+      title: ShipmentStatus
+    ShipmentUpdate:
+      properties:
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+          description: Nuevo estado para la transición
+      type: object
+      required:
+      - status
+      title: ShipmentUpdate
+    ShipmentUpdateResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        previousStatus:
+          $ref: '#/components/schemas/ShipmentStatus'
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - status
+      - previousStatus
+      - updatedAt
+      title: ShipmentUpdateResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
