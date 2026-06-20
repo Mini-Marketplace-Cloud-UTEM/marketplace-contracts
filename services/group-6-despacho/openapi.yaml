@@ -1,21 +1,21 @@
 openapi: 3.0.3
 info:
-  title: API de Despacho y LogÃ­stica â€” Grupo 6
+  title: API de Despacho y Logística — Grupo 6
   description: |
-    Servicio de gestiÃ³n de despachos.
+    Servicio de gestión de despachos.
     
-    ### MÃ¡quina de Estados
-    - **PENDING**: EnvÃ­o creado, a la espera de recolecciÃ³n.
-    - **IN_TRANSIT**: El paquete estÃ¡ en ruta hacia su destino.
+    ### Máquina de Estados
+    - **PENDING**: Envío creado, a la espera de recolección.
+    - **IN_TRANSIT**: El paquete está en ruta hacia su destino.
     - **DELIVERED**: Entregado exitosamente.
-    - **CANCELLED**: Cancelado antes del envÃ­o.
-    - **FAILED**: Fallo en la entrega (ej. direcciÃ³n no encontrada).
+    - **CANCELLED**: Cancelado antes del envío.
+    - **FAILED**: Fallo en la entrega (ej. dirección no encontrada).
     - **RETURNED**: Devuelto al origen tras fallo.
   version: 1.1.0
 
 servers:
   - url: https://g6-despacho.onrender.com/api/v1
-    description: Mock Server
+    description: Mock Server (v1.1)
 
 components:
   schemas:
@@ -23,15 +23,9 @@ components:
       type: object
       required: [length, width, height]
       properties:
-        length:
-          type: number
-          format: float
-        width:
-          type: number
-          format: float
-        height:
-          type: number
-          format: float
+        length: { type: number, format: float }
+        width: { type: number, format: float }
+        height: { type: number, format: float }
 
     PackageInput:
       type: object
@@ -50,8 +44,7 @@ components:
       type: object
       required: [city, packages]
       properties:
-        city:
-          type: string
+        city: { type: string }
         packages:
           type: array
           items:
@@ -61,8 +54,7 @@ components:
       type: object
       required: [totalShippingCost, currency]
       properties:
-        totalShippingCost:
-          type: integer
+        totalShippingCost: { type: integer }
         currency:
           type: string
           default: CLP
@@ -71,14 +63,10 @@ components:
       type: object
       required: [orderId, customerName, address, city, packages]
       properties:
-        orderId:
-          type: string
-        customerName:
-          type: string
-        address:
-          type: string
-        city:
-          type: string
+        orderId: { type: string }
+        customerName: { type: string }
+        address: { type: string }
+        city: { type: string }
         packages:
           type: array
           items:
@@ -88,87 +76,71 @@ components:
       type: object
       required: [shipmentId, orderId, customerName, address, city, originCd, volumetricWeight, shippingCost, weightKg, status, createdAt, updatedAt]
       properties:
-        shipmentId:
-          type: string
-        orderId:
-          type: string
-        customerName:
-          type: string
-        address:
-          type: string
-        city:
-          type: string
+        shipmentId: { type: string }
+        orderId: { type: string }
+        customerName: { type: string }
+        address: { type: string }
+        city: { type: string }
         originCd:
           type: string
           enum: [NORTE, CENTRO, SUR]
-        volumetricWeight:
-          type: number
-          format: float
-        shippingCost:
-          type: integer
-        weightKg:
-          type: number
-          format: float
-        status:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        estimatedDelivery:
-          type: string
-          format: date-time
-          nullable: true
+        volumetricWeight: { type: number, format: float }
+        shippingCost: { type: integer }
+        weightKg: { type: number, format: float }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        estimatedDelivery: { type: string, format: date-time, nullable: true }
 
     ShipmentUpdate:
       type: object
       required: [status]
       properties:
-        status:
-          type: string
+        status: { type: string }
 
     ShipmentUpdateResponse:
       type: object
       required: [shipmentId, orderId, status, previousStatus, updatedAt]
       properties:
-        shipmentId:
-          type: string
-        orderId:
-          type: string
-        status:
-          type: string
-        previousStatus:
-          type: string
-        updatedAt:
-          type: string
-          format: date-time
+        shipmentId: { type: string }
+        orderId: { type: string }
+        status: { type: string }
+        previousStatus: { type: string }
+        updatedAt: { type: string, format: date-time }
+
+    ShipmentListResponse:
+      type: object
+      required: [total, limit, offset, shipments]
+      properties:
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentResponse'
 
   parameters:
     XRequestId:
       name: X-Request-Id
       in: header
       required: true
-      schema:
-        type: string
+      schema: { type: string }
     XCorrelationId:
       name: X-Correlation-Id
       in: header
       required: true
-      schema:
-        type: string
+      schema: { type: string }
     XConsumer:
       name: X-Consumer
       in: header
       required: true
-      schema:
-        type: string
+      schema: { type: string }
 
 paths:
   /shipments/quotes:
     post:
-      summary: Cotizar un envÃ­o multi-paquete
+      summary: Cotizar un envío multi-paquete
       requestBody:
         required: true
         content:
@@ -177,11 +149,17 @@ paths:
               $ref: '#/components/schemas/QuoteRequest'
       responses:
         '200':
-          description: CotizaciÃ³n exitosa
+          description: Cotización exitosa
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuoteResponse'
+        '422':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
 
   /shipments:
     post:
@@ -205,9 +183,23 @@ paths:
                 type: array
                 items:
                   type: string
+        '400':
+          $ref: '../../shared/components.yaml#/components/responses/BadRequest'
+        '409':
+          description: Conflicto
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
+        '422':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
 
     get:
-      summary: Listar despachos (soporta bÃºsqueda por order_id)
+      summary: Listar despachos (soporta búsqueda por order_id)
       parameters:
         - $ref: '#/components/parameters/XRequestId'
         - $ref: '#/components/parameters/XCorrelationId'
@@ -215,17 +207,16 @@ paths:
         - name: order_id
           in: query
           required: false
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
           description: Lista de despachos
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ShipmentResponse'
+                $ref: '#/components/schemas/ShipmentListResponse'
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
 
   /shipments/{shipmentId}:
     get:
@@ -237,8 +228,7 @@ paths:
         - name: shipmentId
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
           description: Despacho encontrado
@@ -246,6 +236,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentResponse'
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
 
     patch:
       summary: Actualizar estado de un despacho
@@ -256,8 +248,7 @@ paths:
         - name: shipmentId
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -271,6 +262,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentUpdateResponse'
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
+        '409':
+          description: Conflicto
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
 
   /shipments/{shipmentId}/history:
     get:
@@ -282,15 +281,15 @@ paths:
         - name: shipmentId
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
-          description: Lista de eventos histÃ³ricos
+          description: Lista de eventos históricos
           content:
             application/json:
-              schema:
-                type: object
+              schema: { type: object }
+        '404':
+          $ref: '../../shared/components.yaml#/components/responses/NotFound'
 
   /health:
     get:
