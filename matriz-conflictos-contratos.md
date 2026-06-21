@@ -2,9 +2,8 @@
 
 **Fecha:** 2026-06-18
 **Objetivo:** referencia rápida — qué contrato tiene cada grupo hoy, y en
-qué choca contra los demás. El detalle narrativo de cada hallazgo está en
-`analisis-integration-hell-2026-06-18.md`; este documento es la versión
-tabla, para consulta rápida en la reunión.
+qué choca contra los demás. Versión en tabla, para consulta rápida en la
+reunión.
 
 ---
 
@@ -17,7 +16,7 @@ tabla, para consulta rápida en la reunión.
 | 3 | Catálogo | `services/group-3-catalogo/openapi.yaml` | ✅ Completo (repo `grupo-3-CATALOGO`) |
 | 4 | Carro/Checkout/Inventario | `services/group-4-carrito/openapi.yaml` | ✅ Completo (repo `G4`) |
 | 5 | Pedidos | — | 🆕 **No existe.** Solo docs locales que se contradicen entre sí. |
-| 6 | Despacho | — | ⚠️ Código real (`G6-Shipment-Service`) implementa v1.0; documentación dice v1.1. Ningún `openapi.yaml` formal todavía. |
+| 6 | Despacho | — | ✅ Código real (`G6-Shipment-Service`) implementa **v1.2** (multi-paquete, cotización, camelCase, outbox de eventos) desde el 2026-06-20. Tienen `openapi.yaml` auto-generado en su repo; pendiente subirlo a `marketplace-contracts`. |
 | 7 | Reportería | — | 🆕 Solo un `.docx` de arquitectura con contrato embebido, sin OpenAPI real. |
 | 8 | Pagos/Notificaciones | `services/group-8-pagos/openapi.yaml` | ✅ Completo (repo `G8-Pagos-y-Notificaciones`) |
 
@@ -34,7 +33,7 @@ tabla, para consulta rápida en la reunión.
 | 3 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ (campos extra, no rompe) |
 | 4 | `{error, message, details?}` | **`error`** | ❌ |
 | 5 | `{error_code, message}` | **`error_code`** | ❌ (un tercer nombre distinto) |
-| 6 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ |
+| 6 | `{code, message, details?, correlationId?}` (v1.2, código real) | `code` | ✅ ya es exactamente la forma corta acordada |
 | 7 | `{timestamp, status, code, message, correlationId}` | `code` | ✅ |
 | 8 | `{error, message, details?}` | **`error`** | ❌ |
 
@@ -51,7 +50,7 @@ se alineen.
 | 3 | `number` (sin restricción) | CLP (implícito) | ⚠️ Ambiguo, no fuerza integer |
 | 4 | `number/double` | **USD** | ❌ |
 | 5 | sin tipo declarado (ejemplos vienen enteros) | CLP (implícito) | ⚠️ A confirmar cuando exista contrato real |
-| 6 | `INTEGER` (`shipping_cost`, v1.1 — no implementado en código real) | CLP | ✅ (en el papel; v1.0 real no maneja dinero) |
+| 6 | `integer` (`shippingCost`, calculado por motor de tarifas, v1.2) | CLP | ✅ implementado en código, no solo en el papel |
 | 7 | `integer` (`totalAmount`, `amountPaid`) | CLP (implícito) | ✅ |
 | 8 | `number/double` | CLP (enum cerrado) | ❌ |
 
@@ -84,18 +83,18 @@ formato equivocado.
 | 3 | snake_case |
 | 4 | **camelCase** |
 | 5 | snake_case |
-| 6 | snake_case |
+| 6 | **camelCase** (v1.2, vía `alias_generator` de Pydantic) — con una excepción puntual: `GET /shipments?orderId=` todavía devuelve snake_case porque ese endpoint construye la respuesta como dict plano sin pasar por el modelo. Reportado a G6. |
 | 7 | camelCase en el envelope de eventos, **snake_case en el evento `ShipmentDelivered`** (inconsistente dentro del mismo documento) |
 | 8 | **camelCase** |
 
 **Choque (no detectado en el análisis anterior):** la suposición de que
-"todos los backends usan snake_case y el BFF traduce" es **falsa** — G4 y
-G8 ya exponen camelCase en su contrato público por su cuenta. Esto es
-bueno (cumplen la convención) pero significa que el BFF no puede aplicar
-una regla de traducción uniforme a todos los servicios; tiene que
-saber, servicio por servicio, si necesita traducir o no.
+"todos los backends usan snake_case y el BFF traduce" es **falsa** — G4,
+G6 y G8 ya exponen camelCase en su contrato público por su cuenta. Esto
+es bueno (cumplen la convención) pero significa que el BFF no puede
+aplicar una regla de traducción uniforme a todos los servicios; tiene
+que saber, servicio por servicio, si necesita traducir o no.
 
-### 2.5 Paginación — 5 formas distintas en 8 grupos
+### 2.5 Paginación — 4 formas distintas en 8 grupos
 
 | Grupo | Forma |
 |---|---|
@@ -103,7 +102,7 @@ saber, servicio por servicio, si necesita traducir o no.
 | 3 | `{data, pagination: {page, size, total, totalPages, hasNext, hasPrev}}` |
 | 4 | N/A (no expone listados paginados) |
 | 5 | **Sin paginación** — `GET /users/{user_id}/orders` devuelve un arreglo plano |
-| 6 | `{total, limit, offset, shipments: [...]}` — usa `limit/offset`, no `page/pageSize`, y no envuelve en `{data, pagination}` |
+| 6 | `{data, pagination: {page, pageSize, total, totalPages, hasNext, hasPrev}}` (v1.2) — ✅ ya coincide exactamente con la convención acordada |
 | 8 | `{data, pagination: {page, size, total}}` (sin `totalPages`/`hasNext`/`hasPrev`) |
 
 **Choque adicional:** el `shared/components.yaml` que ya publicamos
@@ -135,9 +134,9 @@ propio mapeo.
 
 | Choque | Entre | Detalle |
 |---|---|---|
-| ¿Quién orquesta el checkout? | G4 ↔ G5 ↔ BFF | G4 ya llama a G5 al confirmar checkout; nuestro contrato BFF asume que el BFF orquesta todo — hay que alinear (`analisis-integration-hell` §4.7). |
-| Documentación vs. código real | G6 (consigo mismo) | El código implementa v1.0; README y docs dicen v1.1. Nadie fuera de G6 puede confiar en la documentación sin mirar el código (`analisis-integration-hell` §4.5). |
-| Interpretación de contratos ajenos desactualizada | G6 → G1/G4/G5/G7/G8 | G6 escribió su propia versión de los contratos de los demás (`v1.1/*.md`) y ya no coincide con la realidad (`analisis-integration-hell` §4.6). |
+| ¿Quién orquesta el checkout? | G4 ↔ G5 ↔ BFF | G4 ya llama a G5 al confirmar checkout; nuestro contrato BFF asume que el BFF orquesta todo — hay que alinear. |
+| Documentación vs. código real | G6 (consigo mismo) | Persiste, pero ya no en contra nuestra: hoy (2026-06-20) el código v1.2 implementa más de lo que su propio doc `Documentacion_API_G6_v1.2.md` describe (forma de error y paginación reales son más completas que la prosa). Ver `services/group-6-despacho/README.md`. |
+| Bug de naming en un endpoint | G6 (consigo mismo) | `GET /shipments?orderId=` devuelve snake_case mientras el resto de los endpoints de G6 devuelve camelCase — reportado a G6, ver `services/group-6-despacho/README.md`. |
 | Documento de diseño vs. contrato real | G2, G3 (parcial), G4 (JSON viejo), G8 | Cada uno tiene un PDF/DOCX/JSON que no coincide con su propio OpenAPI real — riesgo de que alguien implemente mirando el documento viejo. |
 | `UserProfile.name` único vs. separado | G2 ↔ BFF | G2 expone `name` único; nuestro contrato pedía `firstName`/`lastName`. |
 | Moneda CLP vs. USD en el mismo total | G4 ↔ G6 (cotización envío) | G6 cotiza en CLP entero; G4 suma todo en USD float — el total del carrito quedaría mezclando ambas. |
@@ -165,6 +164,8 @@ decisión ejecutiva de Grupo 1. Detalle completo y razonamiento en
    G4 en vez de orquestar él mismo.
 7. **Naming: camelCase obligatorio** en el contrato público de todos los
    backends (no solo traducción en el BFF) — G2, G3, G5, G6 deben migrar.
-8. **G6 integra hoy contra v1.0**; v1.1 queda como mejora de fase 2.
+8. **G6 integra contra v1.2** (actualizado 2026-06-20 — su v1.0/v1.1
+   anteriores quedaron superadas por una release real que ya implementa
+   el modelo multi-paquete y cumple naming/error/paginación).
 9. **JWT: validación centralizada** vía `POST /auth/validate` de G2,
    confirmado (ver `data-dictionary/estandar-jwt.md`).

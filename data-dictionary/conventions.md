@@ -4,9 +4,9 @@ Estas reglas aplican al **contrato público** que cada grupo expone hacia
 los demás (vía REST o eventos). Internamente, cada servicio puede usar lo
 que quiera en su propia base de datos.
 
-Origen: detectadas como necesarias durante el análisis de
-`analisis-integration-hell-2026-06-18.md`, donde se encontró que cada
-grupo había definido su propio formato sin acuerdo previo.
+Origen: detectadas como necesarias durante la revisión de contratos de
+los 8 grupos, donde se encontró que cada grupo había definido su propio
+formato sin acuerdo previo.
 
 **Estado:** las reglas de este documento son la **decisión ejecutiva de
 Grupo 1** tomada el 2026-06-19 (ver `decisiones-ejecutivas-2026-06-19.md`
@@ -136,10 +136,16 @@ un debate abierto, son una propuesta concreta a validar o ajustar.
 
 ## Versión vigente de Grupo 6 (Despacho)
 
-- **Decidido:** se integra contra **v1.0** (envío único, sin cotización,
-  sin eventos reales) — es lo que el código de G6 implementa hoy. v1.1
-  (multi-paquete, cotización, eventos) queda como mejora de fase 2 sin
-  fecha comprometida; no bloquea a nadie mientras tanto.
+- **Actualizado 2026-06-20:** G6 liberó código que implementa **v1.2**
+  (multi-paquete, cotización, camelCase, paginación y forma de error ya
+  alineadas a este documento, outbox de eventos). Se integra contra esa
+  versión — superó la decisión anterior de quedarse en v1.0, no hace
+  falta esperar a una fase 2.
+- Pendiente de parte de G6: subir su `openapi.yaml` (ya lo generan
+  automáticamente desde FastAPI) a
+  `services/group-6-despacho/openapi.yaml`, y corregir el endpoint
+  `GET /shipments?orderId=`, que todavía devuelve snake_case en vez de
+  camelCase (ver `canonical-models.md`).
 
 ## Decisiones confirmadas — ver detalle completo
 

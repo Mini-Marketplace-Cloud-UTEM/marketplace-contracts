@@ -8,9 +8,6 @@ locales de Office (arquitectura, contrato REST y contrato de eventos en
 `.md`/`.pdf`/`.docx`), y esos documentos se contradicen entre sí en varios
 puntos (formato de `orderId`, casing de `OrderStatus`, nombre de eventos).
 
-Ver el detalle completo en `analisis-integration-hell-2026-06-18.md`
-(sección 4.1) en la raíz de este repo.
-
 **Actualización 2026-06-19:** Grupo 1 redactó un `openapi.yaml`
 **borrador** en esta misma carpeta, como punto de partida (no como
 contrato impuesto) — fija el formato de `orderId` (`ORD-YYYYMMDD-NNN`,

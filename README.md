@@ -37,8 +37,6 @@ npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
 ## Documentos de análisis (raíz del repo)
 
 - `revision-contratos-2026-06-18.md` — comparación contrato BFF vs cada grupo.
-- `analisis-integration-hell-2026-06-18.md` — análisis completo de
-  desincronización entre todos los grupos y plan de remediación.
 - `guia-organizacion-y-contratos.md` — guía corta para presentar a los
   líderes de grupo en la reunión.
 - `matriz-conflictos-contratos.md` — tabla de referencia rápida: qué
