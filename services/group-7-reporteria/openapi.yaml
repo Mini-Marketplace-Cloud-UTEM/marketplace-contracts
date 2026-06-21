@@ -1,27 +1,22 @@
 openapi: 3.0.3
 info:
-  title: Grupo 7 — Reportería, Batch y Streaming — BORRADOR
-  version: 0.1.0-draft
+  title: Grupo 7 — Reportería, Batch y Streaming
+  version: 1.0.0
   description: |
-    **Este NO es un contrato confirmado por Grupo 7.** Es un punto de
-    partida redactado por Grupo 1 (Frontend/BFF), en rol de coordinación,
-    a partir del único documento de arquitectura que Grupo 7 había
-    publicado (`.docx`, sin OpenAPI real), formalizado aquí como YAML y
-    ajustado a las convenciones de `data-dictionary/conventions.md`
-    (IDs con formato `ORD-YYYYMMDD-NNN`, dinero entero, etc.).
-
-    Grupo 7 debe revisar, ajustar y *adoptar* (o reemplazar) este
-    archivo. Ver detalle en `analisis-integration-hell-2026-06-18.md` §4.8.
+    Contrato oficial de la API REST e Interfaces del Grupo 7 (Reportería, Batch y Streaming).
+    Documento corregido de acuerdo con los requerimientos de arquitectura y alineado con las 
+    convenciones globales del Mini Marketplace.
 
 servers:
   - url: http://localhost:8070
-    description: Desarrollo local (placeholder, a confirmar por G7)
+    description: Desarrollo local
+  - url: https://api-reporteria-g7.render.com # (Esto no funciona aun por que no tenemos un render)
+    description: Servidor de producción en Render
 
 tags:
   - name: Reports
 
 paths:
-
   /reports/sales:
     get:
       tags: [Reports]
@@ -49,7 +44,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SalesReport'
         '400':
-          $ref: '../../shared/components.yaml#/components/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
 
   /reports/orders-by-status:
     get:
@@ -105,7 +100,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/TopProduct'
                   pagination:
-                    $ref: '../../shared/components.yaml#/components/schemas/Pagination'
+                    $ref: '#/components/schemas/Pagination'
 
   /reports/batch/recalculate:
     post:
@@ -144,26 +139,100 @@ paths:
                     type: string
                     enum: [QUEUED]
 
+  /reports/average-ticket:
+    get:
+      tags: [Reports]
+      summary: Obtención del ticket promedio de compra
+      operationId: getAverageTicket
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+      responses:
+        '200':
+          description: Ticket promedio calculado del negocio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  averageTicket:
+                    type: integer
+                    example: 49990
+                  currency:
+                    type: string
+                    default: CLP
+
+  /reports/peak-hours:
+    get:
+      tags: [Reports]
+      summary: Análisis de franjas horarias con mayor volumen de transacciones
+      operationId: getPeakHours
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+      responses:
+        '200':
+          description: Distribución horaria de ventas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hour:
+                      type: integer
+                      example: 18
+                    orderCount:
+                      type: integer
+                      example: 42
+
+  /reports/delivery-performance:
+    get:
+      tags: [Reports]
+      summary: Tiempos promedio de entrega (Lead Time)
+      operationId: getDeliveryPerformance
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/XConsumer'
+      responses:
+        '200':
+          description: Métricas de rendimiento de despacho consolidadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avgDeliveryTimeMinutes:
+                    type: integer
+                    example: 120
+                  totalDeliveredCount:
+                    type: integer
+                    example: 154
+
 components:
   parameters:
     XRequestId:
       name: X-Request-Id
       in: header
-      required: false
+      required: true
       schema:
         type: string
         format: uuid
     XCorrelationId:
       name: X-Correlation-Id
       in: header
-      required: false
+      required: true
       schema:
         type: string
         format: uuid
     XConsumer:
       name: X-Consumer
       in: header
-      required: false
+      required: true
       schema:
         type: string
         example: group-01
@@ -175,11 +244,19 @@ components:
         type: string
         format: uuid
 
+  responses:
+    BadRequest:
+      description: Estructura de petición inválida o malformada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
   schemas:
     OrderId:
       type: string
-      pattern: '^ORD-\d{8}-\d{3,}$'
-      example: "ORD-20260619-001"
+      pattern: '^ORD-(\d{4}|\d{8}-\d{3,})$'
+      example: "ORD-1001"
 
     SalesReport:
       type: object
@@ -215,7 +292,7 @@ components:
       properties:
         productId:
           type: string
-          format: uuid
+          example: "P-100"
         name:
           type: string
         unitsSold:
@@ -223,20 +300,44 @@ components:
         revenue:
           type: integer
 
-# ─────────────────────────────────────────────────────────────────────────
-# EVENTOS — G7 es consumidor puro, no publica eventos propios
-# ─────────────────────────────────────────────────────────────────────────
+    Pagination:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+        currentPage:
+          type: integer
+        pageSize:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          format: uuid
+
 x-events:
   consumed:
-    - eventType: ORDER_CREATED
+    - eventType: OrderCreated
       from: Grupo 5
-    - eventType: PAYMENT_APPROVED
+    - eventType: PaymentApproved
       from: Grupo 8
-    - eventType: INVENTORY_SHORTAGE
+    - eventType: InventoryShortage
       from: Grupo 4
-    - eventType: SHIPMENT_DELIVERED
+    - eventType: ShipmentDelivered
       from: Grupo 6
       note: >
-        Confirmado por Grupo 8 que este evento llega en snake_case
-        (order_id, customer_name) desde G6 — Grupo 7 debe normalizarlo
-        igual que lo hace G8.
+        Normalizar las estructuras de datos y marcas temporales internas 
+        recibidas en snake_case para mantener la consistencia del dominio analítico.
