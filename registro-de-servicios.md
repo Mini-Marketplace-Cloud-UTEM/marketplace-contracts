@@ -13,7 +13,7 @@ ese grupo si existe (ver `data-dictionary/contratos-mock.md`).
 |---|---|---|---|---|
 | 1 | BFF | _pendiente_ | — | 🔴 No desplegado todavía |
 | 2 | Auth | `https://api-grupo2.onrender.com/api/v1` | — | ✅ Declarada en su propio contrato |
-| 3 | Catálogo | _pendiente_ | `http://127.0.0.1:4010` (Prism local) | 🟡 Solo mock local, falta URL pública |
+| 3 | Catálogo | https://grupo-3-catalogo.onrender.com/ | `http://127.0.0.1:4010` (Prism local) | 🟡 Solo mock local, falta URL pública |
 | 4 | Carro/Checkout/Inventario | _pendiente_ (su contrato declara `api.marketplace.example.com`, que es placeholder) | _pendiente_ | 🔴 |
 | 5 | Pedidos | _pendiente_ | _pendiente_ | 🔴 Sin servicio desplegado. Ver contrato temporal en `services/group-5-pedidos/openapi.yaml` |
 | 6 | Despacho | _pendiente_ (repo `G6-Shipment-Service` corre local con `uvicorn`/Docker, sin URL pública confirmada) | _pendiente_ | 🔴 |
