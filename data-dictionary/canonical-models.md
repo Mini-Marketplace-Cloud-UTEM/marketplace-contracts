@@ -61,21 +61,21 @@ detrás todavía.
 `CartItem`: `itemId, cartId, productId, name, quantity, unitPrice
 (Money), subTotal (Money)` — mismos ajustes de Money pendientes.
 
-## Order / OrderItem (dueño: Grupo 5 — Pedidos) 🆕
+## Order / OrderItem (dueño: Grupo 5 — Pedidos)
 
-**Sin contrato real publicado.** Campos a partir de la documentación
-local (inconsistente entre sus propios archivos — ver §2.3 de
-`matriz-conflictos-contratos.md`):
+**Actualizado 2026-06-21:** Grupo 5 publicó su contrato real
+(`services/group-5-pedidos/openapi.yaml`), reemplazando el borrador de
+Grupo 1. Queda alineado al 100% con la convención.
 
 | Campo canónico | Tipo | Estado real |
 |---|---|---|
-| `orderId` | string `ORD-YYYYMMDD-NNN` | ⚠️ G5 usa 3 formatos distintos en sus propios documentos; debe converger al formato ya usado por G6/G8. |
-| `userId` | uuid | ✅ (asumido) |
-| `status` | enum (ver tabla de mapeo abajo) | ⚠️ Mezcla mayúsculas (doc de arquitectura) y minúsculas (ejemplos REST/eventos) dentro del mismo grupo. |
-| `items[]` | array de `OrderItem` | ✅ (asumido) |
-| `totalAmount` | `Money` | ✅ (ya viene entero en sus ejemplos) |
-| `shippingAddress` | objeto (street/city/region/country) | A confirmar contra G5 — hoy el dato de dirección viaja en el payload de creación, no como objeto estructurado. |
-| `createdAt`/`updatedAt` | date-time | ✅ (asumido) |
+| `orderId` | string `ORD-YYYYMMDD-NNN` | ✅ |
+| `userId` | uuid | ✅ |
+| `status` | enum (ver tabla de mapeo abajo) | ✅ casing consistente (`UPPER_SNAKE_CASE`) en todo el contrato |
+| `items[]` | array de `OrderItem` | ✅ |
+| `totalAmount`, `subtotal`, `shippingCost` | `Money` (integer, CLP) | ✅ |
+| `shippingAddress` | objeto (street/city/region/country/postalCode) | ✅ objeto estructurado |
+| `createdAt`/`updatedAt` | date-time | ✅ |
 
 ### Mapeo de vocabularios de estado — decidido
 

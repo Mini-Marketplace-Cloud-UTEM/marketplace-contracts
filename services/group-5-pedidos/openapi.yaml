@@ -1,28 +1,39 @@
 openapi: 3.0.3
 info:
-  title: Grupo 5 — Pedidos (Order Management) — BORRADOR
-  version: 0.1.0-draft
+  title: Grupo 5 — Pedidos (Order Management)
+  version: 1.0.0
   description: |
-    **Este NO es un contrato confirmado por Grupo 5.** Es un punto de
-    partida redactado por Grupo 1 (Frontend/BFF), en rol de coordinación,
-    a partir de:
-    - La documentación local de Grupo 5 (arquitectura, contrato REST y de
-      eventos), que se contradecía a sí misma en formato de `orderId` y
-      casing de estados.
-    - Lo que Grupo 4 y Grupo 8 ya construyeron asumiendo ciertos campos de
-      Grupo 5 (`orderId`, `status`).
-    - Las convenciones acordadas en `data-dictionary/conventions.md`.
+    Contrato REST oficial de Grupo 5, adoptado a partir del borrador que
+    Grupo 1 dejó en `services/group-5-pedidos/openapi.yaml` (versión
+    `0.1.0-draft`). Reemplaza ese borrador como fuente de verdad.
 
-    Grupo 5 debe revisar, ajustar y *adoptar* (o reemplazar) este archivo
-    — no implementarlo a ciegas. Ver el detalle de las contradicciones
-    originales en `analisis-integration-hell-2026-06-18.md` §4.1.
+    Decisiones heredadas y respetadas en este contrato (ver
+    `decisiones-ejecutivas-2026-06-19.md` en la raíz de `marketplace-contracts`):
+    - Formato de `orderId`: `ORD-YYYYMMDD-NNN` (ya usado por G6 y G8).
+    - camelCase en todo el contrato público.
+    - Forma de error corta: `{code, message, details?, correlationId?}`.
+    - Paginación: `{data, pagination: {page, pageSize, total, totalPages, hasNext, hasPrev}}`.
+    - Dinero: siempre `integer`, moneda siempre `CLP`.
+    - Validación de JWT centralizada contra `POST /auth/validate` de Grupo 2.
+    - Orquestación del checkout la hace Grupo 4 — este servicio NO expone
+      un flujo de checkout propio, solo recibe la creación del pedido ya
+      con stock reservado por G4.
+
+  contact:
+    name: Grupo 5 — Pedidos
 
 servers:
-  - url: http://localhost:8050
-    description: Desarrollo local (placeholder, a confirmar por G5)
+  - url: https://api-grupo5-pedidos.onrender.com/v1
+    description: Producción (Render) — actualizar cuando se despliegue
+  - url: http://localhost:8050/v1
+    description: Desarrollo local
 
 tags:
   - name: Orders
+    description: Operaciones sobre el ciclo de vida de un pedido.
+
+security:
+  - BearerAuth: []
 
 paths:
 
@@ -31,25 +42,72 @@ paths:
       tags: [Orders]
       summary: Crear un pedido
       description: >
-        Llamado por el flujo de Checkout (Grupo 4) al confirmar una
-        compra. No valida pago ni stock — eso ya ocurrió antes de llegar
-        aquí (responsabilidad de Grupo 4).
+        Invocado por Grupo 4 (Checkout) al confirmar una compra. El stock ya
+        fue reservado por G4 antes de esta llamada — este endpoint NO valida
+        stock ni pago, solo registra el pedido. Idempotente vía el header
+        `Idempotency-Key`.
       operationId: createOrder
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyHeader'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              userId: "e9d8c7b6-a543-2109-8765-fedcba098765"
+              items:
+                - productId: "f0e9d8c7-b6a5-4321-0987-fedcba098765"
+                  name: "Notebook Lenovo IdeaPad"
+                  quantity: 2
+                  unitPrice: 799990
+                  subtotal: 1599980
+              shippingAddress:
+                street: "Av. Libertador 1234"
+                city: "Santiago"
+                region: "Metropolitana"
+                country: "Chile"
+              notes: null
       responses:
         '201':
-          description: Pedido creado
+          description: Pedido creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '200':
+          description: >
+            La misma `Idempotency-Key` ya fue procesada con el mismo body —
+            se retorna el pedido existente sin crear uno nuevo.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
         '400':
-          $ref: '../../shared/components.yaml#/components/responses/BadRequest'
+          description: Body inválido o `Idempotency-Key` ausente.
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
+              examples:
+                missingIdempotencyKey:
+                  value:
+                    code: "MISSING_IDEMPOTENCY_KEY"
+                    message: "El header Idempotency-Key es obligatorio."
+        '401':
+          $ref: '../../shared/components.yaml#/components/responses/Unauthorized'
+        '409':
+          description: >
+            La misma `Idempotency-Key` ya fue usada con un body distinto.
+          content:
+            application/json:
+              schema:
+                $ref: '../../shared/components.yaml#/components/schemas/Error'
+              example:
+                code: "DUPLICATED_ORDER"
+                message: "Esta Idempotency-Key ya fue usada con datos distintos."
 
   /orders/{orderId}:
     get:
@@ -62,13 +120,18 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/OrderId'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
       responses:
         '200':
-          description: Pedido encontrado
+          description: Pedido encontrado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '../../shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../shared/components.yaml#/components/responses/Forbidden'
         '404':
           $ref: '../../shared/components.yaml#/components/responses/NotFound'
 
@@ -77,8 +140,9 @@ paths:
       tags: [Orders]
       summary: Transicionar el estado de un pedido
       description: >
-        Usado internamente por la orquestación (ej. cuando Grupo 8
-        confirma el pago, o Grupo 6 marca un envío como entregado).
+        Uso interno: lo invoca la propia lógica de G5 al consumir un evento
+        de pago, o un operador logístico/admin autorizado. No está pensado
+        para que el frontend lo llame directo.
       operationId: updateOrderStatus
       parameters:
         - name: orderId
@@ -86,6 +150,7 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/OrderId'
+        - $ref: '#/components/parameters/CorrelationIdHeader'
       requestBody:
         required: true
         content:
@@ -96,26 +161,38 @@ paths:
               properties:
                 status:
                   $ref: '#/components/schemas/OrderStatus'
+                reason:
+                  type: string
+                  nullable: true
+                  description: Motivo, obligatorio si el nuevo estado es CANCELLED o FAILED.
       responses:
         '200':
-          description: Pedido actualizado
+          description: Pedido actualizado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '../../shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../shared/components.yaml#/components/responses/Forbidden'
         '404':
           $ref: '../../shared/components.yaml#/components/responses/NotFound'
         '409':
-          description: Transición de estado no permitida
+          description: Transición de estado no permitida según la máquina de estados.
           content:
             application/json:
               schema:
                 $ref: '../../shared/components.yaml#/components/schemas/Error'
+              example:
+                code: "INVALID_STATUS_TRANSITION"
+                message: "No se puede pasar de DELIVERED a PAYMENT_PENDING."
 
   /users/{userId}/orders:
     get:
       tags: [Orders]
-      summary: Listar pedidos de un usuario
+      summary: Listar pedidos de un usuario (paginado)
+      description: Consumido por el BFF para "ver estado del pedido" en el frontend.
       operationId: getOrdersByUser
       parameters:
         - name: userId
@@ -124,6 +201,11 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
         - name: page
           in: query
           schema:
@@ -137,13 +219,15 @@ paths:
             minimum: 1
             maximum: 50
             default: 10
+        - $ref: '#/components/parameters/CorrelationIdHeader'
       responses:
         '200':
-          description: Lista paginada de pedidos del usuario
+          description: Lista paginada de pedidos del usuario.
           content:
             application/json:
               schema:
                 type: object
+                required: [data, pagination]
                 properties:
                   data:
                     type: array
@@ -151,17 +235,42 @@ paths:
                       $ref: '#/components/schemas/Order'
                   pagination:
                     $ref: '../../shared/components.yaml#/components/schemas/Pagination'
+        '401':
+          $ref: '../../shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../shared/components.yaml#/components/responses/Forbidden'
 
 components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token emitido por Grupo 2. Este servicio NO verifica la firma
+        localmente — reenvía el token a `POST /auth/validate` de Grupo 2
+        antes de procesar (ver `data-dictionary/estandar-jwt.md`).
+
+  parameters:
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Obligatorio en POST /orders para evitar pedidos duplicados.
+
+    CorrelationIdHeader:
+      $ref: '../../shared/components.yaml#/components/parameters/CorrelationIdHeader'
+
   schemas:
 
     OrderId:
       type: string
       pattern: '^ORD-\d{8}-\d{3,}$'
-      description: >
-        Formato acordado: `ORD-YYYYMMDD-NNN`. Reemplaza los 3 formatos
-        distintos que existían en la documentación previa de G5
-        (`ord-20260616-1155`, `ord_20260616_1155`, uuid interno).
+      description: Formato `ORD-YYYYMMDD-NNN`, alineado con G6 y G8.
       example: "ORD-20260619-001"
 
     OrderStatus:
@@ -177,11 +286,10 @@ components:
         - CANCELLED
         - FAILED
       description: >
-        Vocabulario propio de G5 (más granular que `OrderStatus` del BFF
-        a propósito — el BFF colapsa estos 9 estados en los 6 suyos para
-        el frontend, ver tabla de mapeo en `canonical-models.md`).
-        Siempre UPPER_SNAKE_CASE — la documentación previa mezclaba
-        mayúsculas y minúsculas, eso queda corregido aquí.
+        UPPER_SNAKE_CASE. `STOCK_RESERVED` queda por compatibilidad con la
+        tabla de mapeo del BFF, pero en la práctica el stock ya está
+        reservado por G4 antes de crear el pedido — ver documento de
+        arquitectura, sección 5.
 
     OrderItem:
       type: object
@@ -192,13 +300,16 @@ components:
           format: uuid
         name:
           type: string
+          description: Snapshot del nombre al momento de la compra.
         quantity:
           type: integer
           minimum: 1
         unitPrice:
           type: integer
+          description: CLP, sin decimales.
         subtotal:
           type: integer
+          description: CLP, sin decimales.
 
     ShippingAddress:
       type: object
@@ -270,19 +381,3 @@ components:
         updatedAt:
           type: string
           format: date-time
-
-  responses: {}
-
-# ─────────────────────────────────────────────────────────────────────────
-# EVENTOS (asíncronos) — borrador, mismo criterio que el contrato REST
-# ─────────────────────────────────────────────────────────────────────────
-x-events:
-  description: >
-    Eventos publicados por G5 hacia Grupo 7 (Reportería) y Grupo 8
-    (Notificaciones), usando el sobre `EventEnvelope` de
-    `shared/components.yaml`.
-  published:
-    - eventType: ORDER_CREATED
-      payload: { orderId: OrderId, userId: uuid, status: OrderStatus, totalAmount: integer, currency: string, items: OrderItem[] }
-    - eventType: ORDER_CANCELLED
-      payload: { orderId: OrderId, userId: uuid, status: OrderStatus }
