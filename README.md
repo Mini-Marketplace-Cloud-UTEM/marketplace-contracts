@@ -21,9 +21,9 @@ marketplace-contracts/
     ├── group-2-auth/openapi.yaml        # Auth (login, JWT)
     ├── group-3-catalogo/openapi.yaml    # Catálogo de productos
     ├── group-4-carrito/openapi.yaml     # Carro, checkout, inventario, concurrencia
-    ├── group-5-pedidos/openapi.yaml     # Pedidos — BORRADOR redactado por Grupo 1, pendiente que G5 lo adopte/ajuste
-    ├── group-6-despacho/                # Despacho — sin openapi.yaml formal todavía (ver README ahí)
-    ├── group-7-reporteria/openapi.yaml  # Reportería — BORRADOR redactado por Grupo 1, pendiente que G7 lo adopte/ajuste
+    ├── group-5-pedidos/openapi.yaml     # Pedidos — contrato real de Grupo 5
+    ├── group-6-despacho/openapi.yaml    # Despacho — copia del contrato real (auto-generado) de Grupo 6
+    ├── group-7-reporteria/openapi.yaml  # Reportería — BORRADOR de Grupo 1, ajustado parcialmente por Grupo 7
     └── group-8-pagos/openapi.yaml       # Pago simulado y notificaciones
 ```
 
@@ -36,13 +36,9 @@ npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
 
 ## Documentos de análisis (raíz del repo)
 
-- `revision-contratos-2026-06-18.md` — comparación contrato BFF vs cada grupo.
-- `analisis-integration-hell-2026-06-18.md` — análisis completo de
-  desincronización entre todos los grupos y plan de remediación.
-- `guia-organizacion-y-contratos.md` — guía corta para presentar a los
-  líderes de grupo en la reunión.
 - `matriz-conflictos-contratos.md` — tabla de referencia rápida: qué
-  contrato existe hoy y en qué choca cada uno contra los demás.
+  contrato existe hoy, en qué choca cada uno contra los demás, y un
+  checklist de qué grupo ya corrigió qué (sección 5).
 - `decisiones-ejecutivas-2026-06-19.md` — las 9 decisiones que resuelven
   los conflictos de la matriz, listas para validar satisfacción de cada
   grupo en la reunión.

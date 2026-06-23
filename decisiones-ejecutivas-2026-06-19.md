@@ -1,8 +1,7 @@
 # Decisiones ejecutivas — 2026-06-19
 
 **Tomadas por:** Grupo 1 (Frontend/BFF), en rol de coordinación, sobre
-todos los conflictos identificados en `analisis-integration-hell-2026-06-18.md`
-y `matriz-conflictos-contratos.md`.
+todos los conflictos identificados en `matriz-conflictos-contratos.md`.
 
 **Cómo usar este documento en la reunión:** cada punto es una decisión
 ya tomada, no una pregunta abierta. El objetivo de la reunión es validar
@@ -24,20 +23,24 @@ ambos que deshagan su integración para que el BFF orqueste en su lugar.
 
 **Acción:** Grupo 1 reescribe la sección "Orders" de su contrato.
 
-## 2. Versión vigente de Grupo 6 → **v1.0 ahora, v1.1 fase 2**
+## 2. Versión vigente de Grupo 6 → **v1.2** (actualizado 2026-06-20)
 
-Se integra contra v1.0 (envío único, sin cotización, sin eventos reales)
-porque es lo único que el código de G6 implementa hoy. v1.1 (multi-
-paquete, cotización, eventos) queda como mejora futura sin fecha
-comprometida.
+Esta decisión se tomó el 2026-06-19 como "v1.0 ahora, v1.1 fase 2", porque
+en ese momento v1.1 no tenía una sola línea de código. El 2026-06-20 G6
+liberó una versión v1.2 que sí implementa el modelo multi-paquete (motor
+de tarifas, cotización, patrón Outbox), además de adoptar camelCase y la
+forma de error/paginación ya acordadas en este mismo documento. Se
+actualiza la decisión: **se integra contra v1.2**, no contra v1.0.
 
-**Por qué:** v1.0 ya funciona de punta a punta; v1.1 no tiene una sola
-línea de código todavía (motor de tarifas, modelo multi-bodega, patrón
-Outbox para eventos — todo por construir). Exigir v1.1 ahora bloquearía
-a G1/G4/G5 sin necesidad real.
+**Por qué el cambio:** la condición que motivó esperar (v1.1 sin código)
+ya no aplica — G6 construyó la versión completa antes de la reunión. No
+tiene sentido pedirles que integremos contra una versión vieja cuando la
+nueva ya está funcionando y cumple mejor la convención del proyecto.
 
-**Acción:** Grupo 6 corrige su README para reflejar que hoy implementa
-v1.0, no v1.1.
+**Acción:** Grupo 6 sube su `openapi.yaml` (ya lo generan automáticamente
+desde FastAPI) a `services/group-6-despacho/openapi.yaml`, y corrige el
+endpoint `GET /shipments?orderId=`, que todavía devuelve snake_case en
+vez de camelCase (único punto pendiente, no bloqueante).
 
 ## 3. Naming → **camelCase obligatorio en todos los backends**
 

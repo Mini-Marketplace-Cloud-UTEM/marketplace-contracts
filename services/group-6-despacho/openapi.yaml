@@ -1,195 +1,85 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: API de Despacho y Logística — Grupo 6
-  description: |
-    Servicio de gestión de despachos.
-    
-    ### Máquina de Estados
-    - **PENDING**: Envío creado, a la espera de recolección.
-    - **IN_TRANSIT**: El paquete está en ruta hacia su destino.
-    - **DELIVERED**: Entregado exitosamente.
-    - **CANCELLED**: Cancelado antes del envío.
-    - **FAILED**: Fallo en la entrega (ej. dirección no encontrada).
-    - **RETURNED**: Devuelto al origen tras fallo.
-  version: 1.1.0
-
-servers:
-  - url: https://g6-despacho.onrender.com/api/v1
-    description: Mock Server
-
-components:
-  schemas:
-    DimensionsCm:
-      type: object
-      required: [length, width, height]
-      properties:
-        length:
-          type: number
-          format: float
-        width:
-          type: number
-          format: float
-        height:
-          type: number
-          format: float
-
-    PackageInput:
-      type: object
-      required: [originCd, weightKg, dimensionsCm]
-      properties:
-        originCd:
-          type: string
-          enum: [NORTE, CENTRO, SUR]
-        weightKg:
-          type: number
-          format: float
-        dimensionsCm:
-          $ref: '#/components/schemas/DimensionsCm'
-
-    QuoteRequest:
-      type: object
-      required: [city, packages]
-      properties:
-        city:
-          type: string
-        packages:
-          type: array
-          items:
-            $ref: '#/components/schemas/PackageInput'
-
-    QuoteResponse:
-      type: object
-      required: [totalShippingCost, currency]
-      properties:
-        totalShippingCost:
-          type: integer
-        currency:
-          type: string
-          default: CLP
-
-    ShipmentCreate:
-      type: object
-      required: [orderId, customerName, address, city, packages]
-      properties:
-        orderId:
-          type: string
-        customerName:
-          type: string
-        address:
-          type: string
-        city:
-          type: string
-        packages:
-          type: array
-          items:
-            $ref: '#/components/schemas/PackageInput'
-
-    ShipmentResponse:
-      type: object
-      required: [shipmentId, orderId, customerName, address, city, originCd, volumetricWeight, shippingCost, weightKg, status, createdAt, updatedAt]
-      properties:
-        shipmentId:
-          type: string
-        orderId:
-          type: string
-        customerName:
-          type: string
-        address:
-          type: string
-        city:
-          type: string
-        originCd:
-          type: string
-          enum: [NORTE, CENTRO, SUR]
-        volumetricWeight:
-          type: number
-          format: float
-        shippingCost:
-          type: integer
-        weightKg:
-          type: number
-          format: float
-        status:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        estimatedDelivery:
-          type: string
-          format: date-time
-          nullable: true
-
-    ShipmentUpdate:
-      type: object
-      required: [status]
-      properties:
-        status:
-          type: string
-
-    ShipmentUpdateResponse:
-      type: object
-      required: [shipmentId, orderId, status, previousStatus, updatedAt]
-      properties:
-        shipmentId:
-          type: string
-        orderId:
-          type: string
-        status:
-          type: string
-        previousStatus:
-          type: string
-        updatedAt:
-          type: string
-          format: date-time
-
-  parameters:
-    XRequestId:
-      name: X-Request-Id
-      in: header
-      required: true
-      schema:
-        type: string
-    XCorrelationId:
-      name: X-Correlation-Id
-      in: header
-      required: true
-      schema:
-        type: string
-    XConsumer:
-      name: X-Consumer
-      in: header
-      required: true
-      schema:
-        type: string
-
+  title: API de Despacho y Logística --- Grupo 6
+  description: Servicio de gestión de despachos v1.2
+  version: 1.2.0
 paths:
-  /shipments/quotes:
+  /api/v1/shipments/quotes:
     post:
-      summary: Cotizar un envío multi-paquete
+      summary: Quote Shipment
+      operationId: quote_shipment_api_v1_shipments_quotes_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/QuoteRequest'
+        required: true
       responses:
         '200':
-          description: Cotización exitosa
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuoteResponse'
-
-  /shipments:
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/shipments:
     post:
-      summary: Crear un nuevo despacho multi-paquete
+      summary: Create Shipment
+      operationId: create_shipment_api_v1_shipments_post
       parameters:
-        - $ref: '#/components/parameters/XRequestId'
-        - $ref: '#/components/parameters/XCorrelationId'
-        - $ref: '#/components/parameters/XConsumer'
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
       requestBody:
         required: true
         content:
@@ -198,66 +88,253 @@ paths:
               $ref: '#/components/schemas/ShipmentCreate'
       responses:
         '201':
-          description: Despacho creado (retorna array de IDs)
+          description: Successful Response
           content:
             application/json:
               schema:
                 type: array
                 items:
                   type: string
-
-    get:
-      summary: Listar despachos (soporta búsqueda por order_id)
-      parameters:
-        - $ref: '#/components/parameters/XRequestId'
-        - $ref: '#/components/parameters/XCorrelationId'
-        - $ref: '#/components/parameters/XConsumer'
-        - name: order_id
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Lista de despachos
+                title: Response Create Shipment Api V1 Shipments Post
+        '400':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ShipmentResponse'
-
-  /shipments/{shipmentId}:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
     get:
-      summary: Obtener un despacho por ID
+      summary: Get Shipments
+      operationId: get_shipments_api_v1_shipments_get
       parameters:
-        - $ref: '#/components/parameters/XRequestId'
-        - $ref: '#/components/parameters/XCorrelationId'
-        - $ref: '#/components/parameters/XConsumer'
-        - name: shipmentId
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: orderId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Orderid
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ShipmentStatus'
+          - type: 'null'
+          title: Status
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Pagesize
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
       responses:
         '200':
-          description: Despacho encontrado
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/ShipmentListResponse'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ShipmentResponse'
+                title: Response Get Shipments Api V1 Shipments Get
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/shipments/{shipment_id}:
+    get:
+      summary: Get Shipment By Id
+      operationId: get_shipment_by_id_api_v1_shipments__shipment_id__get
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
+      responses:
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentResponse'
-
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
     patch:
-      summary: Actualizar estado de un despacho
+      summary: Update Shipment Status
+      operationId: update_shipment_status_api_v1_shipments__shipment_id__patch
       parameters:
-        - $ref: '#/components/parameters/XRequestId'
-        - $ref: '#/components/parameters/XCorrelationId'
-        - $ref: '#/components/parameters/XConsumer'
-        - name: shipmentId
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
       requestBody:
         required: true
         content:
@@ -266,35 +343,512 @@ paths:
               $ref: '#/components/schemas/ShipmentUpdate'
       responses:
         '200':
-          description: Estado actualizado
+          description: Successful Response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentUpdateResponse'
-
-  /shipments/{shipmentId}/history:
-    get:
-      summary: Historial inmutable de estados de un despacho
-      parameters:
-        - $ref: '#/components/parameters/XRequestId'
-        - $ref: '#/components/parameters/XCorrelationId'
-        - $ref: '#/components/parameters/XConsumer'
-        - name: shipmentId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Lista de eventos históricos
+        '400':
           content:
             application/json:
               schema:
-                type: object
-
-  /health:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/shipments/{shipment_id}/history:
     get:
-      summary: Health check
+      summary: Get Shipment History
+      operationId: get_shipment_history_api_v1_shipments__shipment_id__history_get
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      - name: x-request-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador único de la petición
+          title: X-Request-Id
+        description: Identificador único de la petición
+      - name: x-correlation-id
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identificador para trazabilidad distribuida
+          title: X-Correlation-Id
+        description: Identificador para trazabilidad distribuida
+      - name: x-consumer
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Identifica el cliente que consume el servicio
+          title: X-Consumer
+        description: Identifica el cliente que consume el servicio
       responses:
         '200':
-          description: OK
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentHistoryResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /:
+    get:
+      summary: Root
+      operationId: root__head
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    head:
+      summary: Root
+      operationId: root__head
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/health:
+    get:
+      summary: Health
+      operationId: health_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    DimensionsCm:
+      properties:
+        length:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Length
+        width:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Width
+        height:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Height
+      type: object
+      required:
+      - length
+      - width
+      - height
+      title: DimensionsCm
+    ErrorDetail:
+      properties:
+        field:
+          type: string
+          title: Field
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - field
+      - message
+      title: ErrorDetail
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        details:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ErrorDetail'
+            type: array
+          - type: 'null'
+          title: Details
+        correlationId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correlationid
+      type: object
+      required:
+      - code
+      - message
+      title: ErrorResponse
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+        service:
+          type: string
+          title: Service
+        version:
+          type: string
+          title: Version
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - status
+      - service
+      - version
+      - timestamp
+      title: HealthResponse
+    OriginCD:
+      type: string
+      enum:
+      - NORTE
+      - CENTRO
+      - SUR
+      title: OriginCD
+    PackageInput:
+      properties:
+        originCd:
+          $ref: '#/components/schemas/OriginCD'
+        weightKg:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Weightkg
+        dimensionsCm:
+          $ref: '#/components/schemas/DimensionsCm'
+      type: object
+      required:
+      - originCd
+      - weightKg
+      - dimensionsCm
+      title: PackageInput
+    Pagination:
+      properties:
+        page:
+          type: integer
+          title: Page
+        pageSize:
+          type: integer
+          title: Pagesize
+        total:
+          type: integer
+          title: Total
+        totalPages:
+          type: integer
+          title: Totalpages
+        hasNext:
+          type: boolean
+          title: Hasnext
+        hasPrev:
+          type: boolean
+          title: Hasprev
+      type: object
+      required:
+      - page
+      - pageSize
+      - total
+      - totalPages
+      - hasNext
+      - hasPrev
+      title: Pagination
+    QuoteRequest:
+      properties:
+        city:
+          type: string
+          maxLength: 100
+          title: City
+        packages:
+          items:
+            $ref: '#/components/schemas/PackageInput'
+          type: array
+          title: Packages
+      type: object
+      required:
+      - city
+      - packages
+      title: QuoteRequest
+    QuoteResponse:
+      properties:
+        totalShippingCost:
+          type: integer
+          title: Totalshippingcost
+        currency:
+          type: string
+          title: Currency
+          default: CLP
+      type: object
+      required:
+      - totalShippingCost
+      title: QuoteResponse
+    ShipmentCreate:
+      properties:
+        orderId:
+          type: string
+          title: Orderid
+          description: ID único del pedido de G5
+        customerName:
+          type: string
+          maxLength: 200
+          title: Customername
+          description: Nombre del destinatario
+        address:
+          type: string
+          maxLength: 500
+          title: Address
+          description: Dirección física de entrega
+        city:
+          type: string
+          maxLength: 100
+          title: City
+          description: Ciudad de destino
+        packages:
+          items:
+            $ref: '#/components/schemas/PackageInput'
+          type: array
+          title: Packages
+      type: object
+      required:
+      - orderId
+      - customerName
+      - address
+      - city
+      - packages
+      title: ShipmentCreate
+    ShipmentHistoryEvent:
+      properties:
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+      type: object
+      required:
+      - status
+      - createdAt
+      title: ShipmentHistoryEvent
+    ShipmentHistoryResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        history:
+          items:
+            $ref: '#/components/schemas/ShipmentHistoryEvent'
+          type: array
+          title: History
+      type: object
+      required:
+      - shipmentId
+      - history
+      title: ShipmentHistoryResponse
+    ShipmentListItem:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        city:
+          type: string
+          title: City
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - status
+      - city
+      - createdAt
+      - updatedAt
+      title: ShipmentListItem
+    ShipmentListResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/ShipmentListItem'
+          type: array
+          title: Data
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      type: object
+      required:
+      - data
+      - pagination
+      title: ShipmentListResponse
+    ShipmentResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        customerName:
+          type: string
+          title: Customername
+        address:
+          type: string
+          title: Address
+        city:
+          type: string
+          title: City
+        originCd:
+          type: string
+          title: Origincd
+        volumetricWeight:
+          type: number
+          title: Volumetricweight
+        shippingCost:
+          type: integer
+          title: Shippingcost
+        weightKg:
+          type: number
+          title: Weightkg
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+        estimatedDelivery:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Estimateddelivery
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - customerName
+      - address
+      - city
+      - originCd
+      - volumetricWeight
+      - shippingCost
+      - weightKg
+      - status
+      - createdAt
+      - updatedAt
+      title: ShipmentResponse
+    ShipmentStatus:
+      type: string
+      enum:
+      - PENDING
+      - IN_TRANSIT
+      - DELIVERED
+      - CANCELLED
+      - FAILED
+      - RETURNED
+      title: ShipmentStatus
+    ShipmentUpdate:
+      properties:
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+          description: Nuevo estado para la transición
+      type: object
+      required:
+      - status
+      title: ShipmentUpdate
+    ShipmentUpdateResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        previousStatus:
+          $ref: '#/components/schemas/ShipmentStatus'
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - status
+      - previousStatus
+      - updatedAt
+      title: ShipmentUpdateResponse

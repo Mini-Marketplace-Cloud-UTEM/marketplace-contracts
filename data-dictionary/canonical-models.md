@@ -3,8 +3,7 @@
 Define el nombre y forma que cada entidad de negocio debería tener en el
 **contrato público** (no en la base de datos interna de cada grupo),
 para que dos grupos que hablan de "un pedido" se refieran exactamente a
-los mismos campos. Basado en lo encontrado en
-`analisis-integration-hell-2026-06-18.md`.
+los mismos campos.
 
 Convención de esta tabla: ✅ = ya implementado así por el grupo dueño,
 ⚠️ = implementado distinto hoy (columna "Estado real" explica el gap),
@@ -62,21 +61,21 @@ detrás todavía.
 `CartItem`: `itemId, cartId, productId, name, quantity, unitPrice
 (Money), subTotal (Money)` — mismos ajustes de Money pendientes.
 
-## Order / OrderItem (dueño: Grupo 5 — Pedidos) 🆕
+## Order / OrderItem (dueño: Grupo 5 — Pedidos)
 
-**Sin contrato real publicado.** Campos a partir de la documentación
-local (inconsistente entre sus propios archivos — ver
-`analisis-integration-hell-2026-06-18.md` §4.1):
+**Actualizado 2026-06-21:** Grupo 5 publicó su contrato real
+(`services/group-5-pedidos/openapi.yaml`), reemplazando el borrador de
+Grupo 1. Queda alineado al 100% con la convención.
 
 | Campo canónico | Tipo | Estado real |
 |---|---|---|
-| `orderId` | string `ORD-YYYYMMDD-NNN` | ⚠️ G5 usa 3 formatos distintos en sus propios documentos; debe converger al formato ya usado por G6/G8. |
-| `userId` | uuid | ✅ (asumido) |
-| `status` | enum (ver tabla de mapeo abajo) | ⚠️ Mezcla mayúsculas (doc de arquitectura) y minúsculas (ejemplos REST/eventos) dentro del mismo grupo. |
-| `items[]` | array de `OrderItem` | ✅ (asumido) |
-| `totalAmount` | `Money` | ✅ (ya viene entero en sus ejemplos) |
-| `shippingAddress` | objeto (street/city/region/country) | A confirmar contra G5 — hoy el dato de dirección viaja en el payload de creación, no como objeto estructurado. |
-| `createdAt`/`updatedAt` | date-time | ✅ (asumido) |
+| `orderId` | string `ORD-YYYYMMDD-NNN` | ✅ |
+| `userId` | uuid | ✅ |
+| `status` | enum (ver tabla de mapeo abajo) | ✅ casing consistente (`UPPER_SNAKE_CASE`) en todo el contrato |
+| `items[]` | array de `OrderItem` | ✅ |
+| `totalAmount`, `subtotal`, `shippingCost` | `Money` (integer, CLP) | ✅ |
+| `shippingAddress` | objeto (street/city/region/country/postalCode) | ✅ objeto estructurado |
+| `createdAt`/`updatedAt` | date-time | ✅ |
 
 ### Mapeo de vocabularios de estado — decidido
 
@@ -111,19 +110,28 @@ levantan una objeción concreta.
 
 ## Shipment (dueño: Grupo 6 — Despacho)
 
-**Atención:** el contrato real (código) implementa el modelo simple de
-abajo (v1.0). La documentación de v1.1 describe un modelo multi-paquete
-que **no está implementado en el código todavía** — ver
-`analisis-integration-hell-2026-06-18.md` §4.5.
+**Actualizado 2026-06-20:** G6 liberó v1.2, que implementa el modelo
+multi-paquete (un pedido puede generar N shipments, uno por cada
+`PackageInput` enviado) y ya cumple casi todas nuestras convenciones por
+su cuenta. Detalle completo en `services/group-6-despacho/README.md`.
 
-| Campo canónico | Tipo | Estado real (código v1.0) |
+| Campo canónico | Tipo | Estado real (código v1.2) |
 |---|---|---|
 | `shipmentId` | string `SHP-...` | ✅ |
-| `orderId` | string `ORD-YYYYMMDD-NNN` | ✅ (y hoy es UNIQUE — 1 pedido = 1 envío) |
-| `customerName`, `address`, `city` | string | ⚠️ G6 expone snake_case — debe migrar a camelCase (decisión 2026-06-19); mientras tanto el BFF traduce. |
-| `weightKg` | number | ✅ |
-| `status` | `PENDING/IN_TRANSIT/DELIVERED/CANCELLED/FAILED/RETURNED` | ✅ |
+| `orderId` | string | ✅ (ya **no** es UNIQUE — 1 pedido puede tener N shipments) |
+| `customerName`, `address`, `city` | string | ✅ camelCase (vía `alias_generator` de Pydantic) |
+| `originCd` | `NORTE/CENTRO/SUR` | 🆕 nuevo en v1.2, centro de distribución de origen del paquete |
+| `weightKg`, `volumetricWeight` | number | ✅ |
+| `shippingCost` | `Money` (integer, CLP) | ✅ calculado por el motor de tarifas de G6 |
+| `status` | `PENDING/IN_TRANSIT/DELIVERED/CANCELLED/FAILED/RETURNED` | ✅ (sin cambios respecto a v1.0) |
 | `estimatedDelivery` | date-time, nullable | ✅ |
+
+**Gap puntual (no de convención, sino un bug):** `GET /shipments?orderId=`
+devuelve los campos en snake_case (`shipment_id`, `order_id`...) en vez de
+camelCase, porque ese endpoint específico construye la respuesta como un
+dict plano sin pasar por el modelo Pydantic que usa el resto de los
+endpoints. Reportado a G6 — no bloquea, pero el BFF debe normalizar esa
+respuesta puntual mientras lo corrigen.
 
 ## Notification (dueño: Grupo 8 — Notificaciones)
 
