@@ -16,7 +16,7 @@ ese grupo si existe (ver `data-dictionary/contratos-mock.md`).
 | 3 | Catálogo | `https://grupo-3-catalogo.onrender.com` | `http://127.0.0.1:4010` (Prism local) | ✅ Confirmada en vivo (2026-06-22) — ver `services/group-3-catalogo/README.md` (gaps y bug de encoding detectados) |
 | 4 | Carro/Checkout/Inventario | _pendiente_ (su contrato declara `api.marketplace.example.com`, que es placeholder) | _pendiente_ | 🔴 |
 | 5 | Pedidos | `https://api-grupo5-pedidos.onrender.com/v1` (declarada en su contrato, despliegue sin confirmar) | _pendiente_ | 🟡 Contrato real ya publicado, falta confirmar que esté desplegada |
-| 6 | Despacho | _pendiente_ (repo `G6-Shipment-Service` corre local con `uvicorn`/Docker, sin URL pública confirmada) | _pendiente_ | 🔴 |
+| 6 | Despacho | `https://g6-despacho.onrender.com` | — | ✅ Desplegado y probado en vivo |
 | 7 | Reportería | _pendiente_ | _pendiente_ | 🔴 Sin servicio desplegado. Ver contrato temporal en `services/group-7-reporteria/openapi.yaml` |
 | 8 | Pagos/Notificaciones | _pendiente_ (su contrato declara `api.marketplace.example.com`, que es placeholder) | _pendiente_ | 🔴 |
 
