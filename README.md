@@ -11,10 +11,8 @@ marketplace-contracts/
 ├── shared/
 │   └── components.yaml          # Error, Pagination, Money, EventEnvelope (reutilizar con $ref)
 ├── data-dictionary/
-│   ├── conventions.md           # reglas obligatorias (IDs, dinero, error, naming, paginación...)
-│   ├── canonical-models.md      # entidades compartidas (User, Product, Order, Payment...)
-│   ├── contratos-mock.md        # cómo levantar un mock (Prism) mientras no hay servicio real
-│   └── estandar-jwt.md          # cómo se valida el JWT entre servicios
+│   ├── guia-y-lineamiento-de-desarrollo.md  # reglas obligatorias + modelos canónicos + mocks
+│   └── guia-de-uso-de-jwt.md                # cómo se transporta y valida el JWT entre servicios
 ├── registro-de-servicios.md     # tabla de URLs reales (Render) por grupo — incompleta a propósito
 └── services/
     ├── group-1-bff/openapi.yaml         # Frontend / BFF
@@ -49,7 +47,7 @@ npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
    no un borrador) va en `services/group-N-x/openapi.yaml`.
 2. Reutiliza los esquemas de `shared/components.yaml` con `$ref` en vez
    de redefinir tu propio `Error`/`Pagination`/`Money`.
-3. Respeta las reglas de `data-dictionary/conventions.md`.
+3. Respeta las reglas de `data-dictionary/guia-y-lineamiento-de-desarrollo.md`.
 4. Todo cambio se sube vía Pull Request, con revisión de al menos un
    grupo consumidor. Si el cambio rompe compatibilidad, sube la versión
    en la URL (`/v1/` → `/v2/`).

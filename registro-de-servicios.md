@@ -7,7 +7,7 @@ es un placeholder que varios contratos todavía tienen).
 
 **Estado: incompleta a propósito.** Se llena a medida que cada grupo
 despliega. Mientras un campo diga `pendiente`, usar el mock (Prism) de
-ese grupo si existe (ver `data-dictionary/contratos-mock.md`).
+ese grupo si existe (ver `data-dictionary/guia-y-lineamiento-de-desarrollo.md`, sección 14).
 
 | Grupo | Servicio | URL producción (Render) | URL mock | Estado |
 |---|---|---|---|---|

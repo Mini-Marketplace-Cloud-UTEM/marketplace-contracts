@@ -31,7 +31,7 @@ Probado en vivo el 2026-06-23: tanto `GET /auth/me` como
 **sin enviar ningún header `Authorization`**. Nunca devuelven `401`.
 
 Esto significa que el estándar de JWT centralizado
-(`data-dictionary/estandar-jwt.md` — cada servicio valida contra G2 en
+(`data-dictionary/guia-de-uso-de-jwt.md` — cada servicio valida contra G2 en
 vez de verificar la firma localmente) **todavía no aporta seguridad
 real**: cualquier request, con o sin token válido, "pasa". No es
 bloqueante para seguir desarrollando el mockup, pero **no se puede

@@ -36,7 +36,7 @@ Hoy es una copia textual fiel (mismo `Error`, `Pagination`, `Money`,
 `EventEnvelope`) — **pero esto crea dos fuentes del mismo archivo**, que
 pueden divergir en silencio si editamos el original en
 `marketplace-contracts/shared/components.yaml` y no avisamos a G5. Viola
-el principio de "fuente única de verdad" de `conventions.md`.
+el principio de "fuente única de verdad" de `guia-y-lineamiento-de-desarrollo.md`.
 
 **Acción pendiente de Grupo 5:** idealmente borrar su copia local y que
 su `openapi.yaml` resuelva contra el repo central, o documentar

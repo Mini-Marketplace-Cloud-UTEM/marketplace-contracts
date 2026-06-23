@@ -15,9 +15,8 @@ info:
       $ref: '../../shared/components.yaml#/components/schemas/Error'
     ```
 
-    Ver las reglas obligatorias en `data-dictionary/conventions.md` y las
-    entidades de negocio compartidas en
-    `data-dictionary/canonical-models.md`.
+    Ver las reglas obligatorias y las entidades de negocio compartidas en
+    `data-dictionary/guia-y-lineamiento-de-desarrollo.md`.
 
 paths: {}
 

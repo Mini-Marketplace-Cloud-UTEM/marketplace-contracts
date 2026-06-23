@@ -62,7 +62,7 @@ corrijan el suyo — si no, perdemos autoridad para exigirlo.
 
 | Grupo | Formato usado | Ejemplo |
 |---|---|---|
-| 1 (BFF) | uuid (a cambiar, ver `conventions.md`) | `b3d2a1c0-1234-...` |
+| 1 (BFF) | uuid (a cambiar, ver `guia-y-lineamiento-de-desarrollo.md`) | `b3d2a1c0-1234-...` |
 | 5 | resuelto en su contrato real (2026-06-21) — un solo formato, igual al de G6/G8 | `ORD-20260619-001` |
 | 6 | string libre, sin formato impuesto por el servicio; en ejemplos usa el mismo patrón que G8 | `ORD-20260611-001` |
 | 7 | acepta ambos formatos desde 2026-06-21 (`^ORD-(\d{4}\|\d{8}-\d{3,})$`) — migración parcial, falta dejar solo el formato con fecha | `ORD-1001` o `ORD-20260618-001` |
@@ -124,8 +124,8 @@ antes de pedirle a los demás que adopten el esquema compartido.
 **Choque:** 4 vocabularios distintos para describir el ciclo de vida de
 "lo mismo" (un pedido, desde que se crea hasta que llega). Sin una tabla
 de equivalencia explícita (propuesta en
-`data-dictionary/canonical-models.md`), cada integración va a inventar su
-propio mapeo.
+`data-dictionary/guia-y-lineamiento-de-desarrollo.md`), cada integración
+va a inventar su propio mapeo.
 
 ---
 
@@ -157,8 +157,8 @@ decisión ejecutiva de Grupo 1. Detalle completo y razonamiento en
 4. **Paginación `{page, pageSize, total, totalPages, hasNext, hasPrev}`**
    — ya reconciliado entre `shared/components.yaml` y el contrato BFF;
    G3, G6 y G8 deben migrar el suyo.
-5. **Tabla de equivalencia de estados** de `canonical-models.md` aprobada
-   como propuesta oficial.
+5. **Tabla de equivalencia de estados** de
+   `guia-y-lineamiento-de-desarrollo.md` aprobada como propuesta oficial.
 6. **G4 orquesta el checkout** — el BFF consume `POST /v1/checkout` de
    G4 en vez de orquestar él mismo.
 7. **Naming: camelCase obligatorio** en el contrato público de todos los
@@ -167,7 +167,7 @@ decisión ejecutiva de Grupo 1. Detalle completo y razonamiento en
    anteriores quedaron superadas por una release real que ya implementa
    el modelo multi-paquete y cumple naming/error/paginación).
 9. **JWT: validación centralizada** vía `POST /auth/validate` de G2,
-   confirmado (ver `data-dictionary/estandar-jwt.md`).
+   confirmado (ver `data-dictionary/guia-de-uso-de-jwt.md`).
 
 ## 5. Checklist de implementación (actualizado 2026-06-23)
 
@@ -191,8 +191,9 @@ real de cada contrato a la fecha:
   `https://grupo2-identidadusuario.onrender.com` (sin `/api/v1`), avisada
   solo por WhatsApp y en su README, nunca en el contrato. Además
   `POST /auth/validate` es hoy un mock que siempre responde `valid:true`
-  sin verificar nada — el estándar de JWT centralizado (`estandar-jwt.md`)
-  todavía no tiene seguridad real detrás. Ver `services/group-2-auth/README.md`.
+  sin verificar nada — el estándar de JWT centralizado
+  (`guia-de-uso-de-jwt.md`) todavía no tiene seguridad real detrás. Ver
+  `services/group-2-auth/README.md`.
 - **Grupo 6:** confirmado que corrigieron el bug de snake_case puntual
   (`GET /shipments?orderId=`) y agregaron tests pytest reales. Nuevo
   requisito no documentado antes: los 3 headers de trazabilidad

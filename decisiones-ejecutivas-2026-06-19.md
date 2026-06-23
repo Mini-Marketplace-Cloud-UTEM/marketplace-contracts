@@ -135,16 +135,16 @@ evita distribuir un secreto compartido entre 7 equipos (riesgo real de
 que alguien lo suba a un repo por error).
 
 **Acción:** ninguna nueva — ya está documentado en
-`data-dictionary/estandar-jwt.md`.
+`data-dictionary/guia-de-uso-de-jwt.md`.
 
 ---
 
 ## Despliegue: Docker obligatorio para todo microservicio
 
 Ya estaba en la lista de tecnologías del curso; se formaliza como regla
-en `data-dictionary/conventions.md` porque no todos los grupos tenían un
-`Dockerfile` todavía. No aplica a Grupo 5 ni Grupo 7 hasta que tengan
-código (ver esa sección para el detalle).
+en `data-dictionary/guia-y-lineamiento-de-desarrollo.md` porque no todos
+los grupos tenían un `Dockerfile` todavía. No aplica a Grupo 5 ni Grupo 7
+hasta que tengan código (ver esa sección para el detalle).
 
 ---
 
