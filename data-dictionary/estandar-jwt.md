@@ -54,13 +54,27 @@ Cada servicio puede cachear el resultado de `validate` por un TTL corto
 (ej. 30-60 segundos) usando el token como clave, para no llamar a G2 en
 cada request. No es un requisito para esta fase del proyecto.
 
+## ⚠️ Estado real (2026-06-23): es un mock, no valida nada todavía
+
+Probado en vivo: `POST /auth/validate` y `GET /auth/me` responden `200`
+con un usuario fijo **sin enviar ningún header `Authorization`** — nunca
+devuelven `401`. El estándar descrito en este documento está acordado y
+es el destino, pero **hoy no hay seguridad real detrás**. Ningún servicio
+debe asumir que un `200` de `/auth/validate` significa que el token era
+válido. Ver `services/group-2-auth/README.md`.
+
 ## Qué se le pide a Grupo 2
 
+- Implementar la validación real (verificar firma/expiración) en
+  `/auth/validate` y `/auth/me` — hoy aceptan cualquier cosa.
 - Mantener `POST /auth/validate` siempre disponible — todos los demás
   servicios dependerán de él en cada request autenticado.
 - Confirmar el código de error si el token está vencido vs. si es
   inválido (hoy ambos casos devuelven genéricamente 401 — no es
   bloqueante, pero ayuda para debugging).
+- Actualizar `servers:` de su `openapi.yaml`: la URL declarada
+  (`api-grupo2.onrender.com/api/v1`) está muerta; la real es
+  `https://grupo2-identidadusuario.onrender.com` (sin `/api/v1`).
 
 ## Pendiente de acordar en la reunión
 

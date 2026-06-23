@@ -28,35 +28,40 @@ multi-paquete** y resuelven casi todo lo que se había señalado:
 | Eventos | Documentados, no implementados | Patrón Transactional Outbox real (tabla `outbox_events`); falta el worker que los despache a un broker, pero la estructura ya existe |
 | Historial de estado | No existía | `GET /shipments/{id}/history` nuevo |
 
-## Gaps que quedan (reportados a G6, no bloqueantes)
+## Actualización 2026-06-23 — los 2 gaps de código quedaron resueltos
 
-1. **Bug de naming puntual:** `GET /shipments?orderId=` devuelve los
-   campos en snake_case (`shipment_id`, `order_id`, etc.), a diferencia
-   de todos los demás endpoints. Causa: ese caso construye la respuesta
-   como un dict plano sin pasar por el modelo `ShipmentResponse`
-   (`CamelModel`), así que no se le aplica el alias de camelCase.
-2. **El `openapi.yaml` auto-generado está incompleto:** como `ErrorResponse`
-   y `Pagination`/`ShipmentListResponse` no se declaran con
-   `response_model=` en sus endpoints, FastAPI no los incluye en el
-   spec generado. El comportamiento real (verificado leyendo
-   `app/main.py` y `app/schemas.py`) sí cumple la convención — pero no
-   se puede confiar 100% en este `openapi.yaml` como documentación
-   completa todavía.
-3. Su doc `docs/contratos/v1.1/G1_Frontend.md` describe un agregado de
-   "estado global" (`PARTIALLY_DELIVERED`, `HAS_ISSUES`) a partir de un
-   arreglo de cajas por pedido — es una propuesta para cuando se quiera
-   formalizar esa lógica en el BFF, todavía no es parte del contrato
-   real ni una obligación.
+Commits del 2026-06-23 (`fix: corregir snake_case en orderId, añadir
+response models faltantes para swagger...`):
+
+1. ✅ **Bug de naming corregido:** `GET /shipments?orderId=` ya devuelve
+   camelCase, confirmado en vivo (`{"code":"NOT_FOUND",...}` en un 404 de
+   prueba).
+2. ✅ **`openapi.yaml` ya completo:** `ErrorResponse` y
+   `Pagination`/`ShipmentListResponse` ahora están declarados con
+   `response_model=` en todos los endpoints — el spec generado ya
+   coincide con el comportamiento real.
+3. ✅ Agregaron una suite de tests pytest real (`tests/test_api.py`).
+
+Su doc `docs/contratos/v1.1/G1_Frontend.md` (la propuesta de "estado
+global" multi-caja) sigue sin ser parte del contrato real — sin cambios,
+no es una obligación.
+
+## Nuevo requisito (2026-06-23, no documentado antes)
+
+Los 3 headers de trazabilidad — `X-Request-Id`, `X-Correlation-Id`,
+`X-Consumer` — ahora son **obligatorios** en todos los endpoints (antes
+no se exigían). El BFF ya los envía en cada request
+(`Grupo-1-BFF/app/routers` — confirmar que el router de shipments, cuando
+se implemente, también los incluya).
 
 ## Cómo lo consumimos (G1/BFF) hoy
 
 - `GET /api/v1/shipments?orderId={orderId}` → arreglo de shipments del
-  pedido (normalizar a camelCase en el BFF mientras dure el bug del
-  punto 1).
+  pedido, ya en camelCase.
 - `GET /api/v1/shipments/{shipmentId}` → detalle de un shipment.
 - `POST /api/v1/shipments/quotes` → cotización de envío (sin headers de
-  trazabilidad obligatorios), pensado para que G4 lo use en checkout.
+  trazabilidad obligatorios — este endpoint específico queda exento),
+  pensado para que G4 lo use en checkout.
 
-**Acción pendiente de G6:** confirmar este `openapi.yaml` como su
-contrato oficial (o regenerarlo después de corregir el punto 1 y 2), y
-mantenerlo actualizado en esta carpeta vía PR.
+**Pendiente:** confirmar este `openapi.yaml` como su contrato oficial vía
+PR a este repo (hoy seguimos copiándolo manualmente).

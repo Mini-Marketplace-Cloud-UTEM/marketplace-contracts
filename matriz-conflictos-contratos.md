@@ -12,13 +12,13 @@ reunión.
 | Grupo | Servicio | Fuente real | Estado |
 |---|---|---|---|
 | 1 | Frontend/BFF | `services/group-1-bff/openapi.yaml` | ✅ Completo, propio |
-| 2 | Auth | `services/group-2-auth/openapi.yaml` | ✅ Completo (repo `Grupo2_IdentidadUsuario`) |
-| 3 | Catálogo | `services/group-3-catalogo/openapi.yaml` | ✅ Completo (repo `grupo-3-CATALOGO`) |
-| 4 | Carro/Checkout/Inventario | `services/group-4-carrito/openapi.yaml` | ✅ Completo (repo `G4`) |
+| 2 | Auth | `services/group-2-auth/openapi.yaml` | 🟡 Completo en forma, pero URL declarada muerta y `/auth/validate` es mock sin validación real (ver `services/group-2-auth/README.md`, 2026-06-23) |
+| 3 | Catálogo | `services/group-3-catalogo/openapi.yaml` | ✅ Completo (repo `grupo-3-CATALOGO`) — contrato sin tocar desde 2026-06-18, servicio real sin regresiones |
+| 4 | Carro/Checkout/Inventario | `services/group-4-carrito/openapi.yaml` | ⚠️ Completo en forma, pero bloqueante de dinero (USD/float) sin corregir, sin despliegue real |
 | 5 | Pedidos | `services/group-5-pedidos/openapi.yaml` | ✅ Completo (repo `Grupo5-Pedidos`, publicado 2026-06-21 — reemplaza el borrador de Grupo 1) |
-| 6 | Despacho | — | ✅ Código real (`G6-Shipment-Service`) implementa **v1.2** (multi-paquete, cotización, camelCase, outbox de eventos) desde el 2026-06-20. Tienen `openapi.yaml` auto-generado en su repo; pendiente subirlo a `marketplace-contracts`. |
-| 7 | Reportería | — | 🆕 Solo un `.docx` de arquitectura con contrato embebido, sin OpenAPI real. |
-| 8 | Pagos/Notificaciones | `services/group-8-pagos/openapi.yaml` | ✅ Completo (repo `G8-Pagos-y-Notificaciones`) |
+| 6 | Despacho | `services/group-6-despacho/openapi.yaml` | ✅ Código real (`G6-Shipment-Service`) implementa **v1.2**, bug de naming corregido 2026-06-23, tests pytest agregados |
+| 7 | Reportería | `services/group-7-reporteria/openapi.yaml` | 🟡 Servicio real construido (FastAPI+Postgres+Pub/Sub+tests), pero error/paginación del código sin corregir y sin desplegar |
+| 8 | Pagos/Notificaciones | `services/group-8-pagos/openapi.yaml` | 🟡 Completo, pero regresión puntual 2026-06-23 en validación de `Idempotency-Key` de Pagos (ver `services/group-8-pagos/README.md`) |
 
 ---
 
@@ -169,23 +169,46 @@ decisión ejecutiva de Grupo 1. Detalle completo y razonamiento en
 9. **JWT: validación centralizada** vía `POST /auth/validate` de G2,
    confirmado (ver `data-dictionary/estandar-jwt.md`).
 
-## 5. Checklist de implementación (actualizado 2026-06-21)
+## 5. Checklist de implementación (actualizado 2026-06-23)
 
 Qué grupo ya aplicó su acción pendiente vs. qué falta, según el código
 real de cada contrato a la fecha:
 
 | Grupo | Error → `code` | Dinero `integer`+CLP | Paginación estándar | Naming camelCase | `orderId` con fecha |
 | --- | --- | --- | --- | --- | --- |
-| 2 | ✅ | N/A | N/A | ⚠️ pendiente | N/A |
-| 3 | ✅ | ⚠️ pendiente | ⚠️ pendiente (`size`) | ⚠️ pendiente | N/A |
-| 4 | ❌ pendiente | ❌ pendiente (USD/float, sin cambios desde 2026-06-18) | N/A | ✅ | N/A |
+| 2 | ✅ (forma correcta, pero ver nota de mock abajo) | N/A | N/A | ⚠️ pendiente (`access_token`, `avatar_url`) | N/A |
+| 3 | ✅ | ⚠️ pendiente | ⚠️ pendiente (`size` como input) | ✅ (servicio real; `openapi.yaml` comiteado sigue en snake_case) | N/A |
+| 4 | ❌ pendiente (sigue `error`, `details` objeto libre) | ❌ pendiente (USD/float, sin cambios desde 2026-06-18, 5+ días) | N/A | ✅ | N/A |
 | 5 | ✅ (contrato real propio, 2026-06-21) | ✅ | ✅ | ✅ | ✅ |
-| 6 | ✅ (v1.2) | ✅ (v1.2) | ✅ (v1.2) | ✅ (v1.2, con bug puntual en 1 endpoint) | ✅ |
-| 7 | ❌ pendiente (sigue con `timestamp`/`status`) | ✅ | ❌ pendiente (`totalItems`/`currentPage`, sin `data`/`pagination`) | ✅ | ⚠️ acepta ambos formatos, falta dejar solo uno |
-| 8 | ✅ (actualizado 2026-06-21) | ✅ (actualizado 2026-06-21) | ✅ (actualizado 2026-06-21) | ✅ | ✅ |
+| 6 | ✅ (v1.2) | ✅ (v1.2) | ✅ (v1.2) | ✅ **bug de naming corregido 2026-06-23** | ✅ |
+| 7 | ❌ pendiente (servicio real construido, pero sigue con `timestamp`/`status` en el código) | ✅ | ❌ pendiente (`totalItems`/`currentPage`, sin `data`/`pagination`) | ✅ | ⚠️ acepta ambos formatos, falta dejar solo uno |
+| 8 | ⚠️ **regresión 2026-06-23**: PR de Pagos quitó la validación manual de `Idempotency-Key`, ahora da 422 genérico de FastAPI en ese caso puntual | ✅ | ✅ (Pagos y Notificaciones E2, consistentes entre sí) | ✅ | ✅ |
 
-**El único bloqueante real que queda es Grupo 4** (dinero en USD/float):
-no ha tocado su contrato desde el 18, y es el único punto que de verdad
-corrompe un cálculo (el total del checkout) si no se corrige antes de
-conectar algo real. Todo lo demás (G2, G3, G7) son ajustes de forma, no
-bloquean el flujo de compra.
+**Hallazgos nuevos de la ronda de revisión post-reunión (2026-06-23):**
+
+- **Grupo 2 (Auth) — urgente:** la URL en `services/group-2-auth/openapi.yaml`
+  (`api-grupo2.onrender.com/api/v1`) está **muerta (404)**. La real es
+  `https://grupo2-identidadusuario.onrender.com` (sin `/api/v1`), avisada
+  solo por WhatsApp y en su README, nunca en el contrato. Además
+  `POST /auth/validate` es hoy un mock que siempre responde `valid:true`
+  sin verificar nada — el estándar de JWT centralizado (`estandar-jwt.md`)
+  todavía no tiene seguridad real detrás. Ver `services/group-2-auth/README.md`.
+- **Grupo 6:** confirmado que corrigieron el bug de snake_case puntual
+  (`GET /shipments?orderId=`) y agregaron tests pytest reales. Nuevo
+  requisito no documentado antes: los 3 headers de trazabilidad
+  (`X-Request-Id`/`X-Correlation-Id`/`X-Consumer`) ahora son obligatorios.
+- **Grupo 7:** construyeron un servicio real completo (FastAPI + Postgres +
+  worker Pub/Sub + tests pytest) — ya no es solo un contrato en papel. Pero
+  el ajuste de error/paginación que parecía corregido en el `openapi.yaml`
+  nunca se propagó al código real. Sin despliegue todavía. Tienen un
+  middleware `USE_MOCKS`/`X-MOCK-HTTP-STATUS` útil para que el BFF fuerce
+  códigos de error en testing (solo cambia el status code, no el body).
+- **Grupo 5:** sin cambios funcionales, pero crearon su propia copia de
+  `shared/components.yaml` dentro de su repo (idéntica hoy) — riesgo de
+  que diverja en silencio si editamos el original y no avisamos.
+
+**El único bloqueante crítico que sigue intacto es Grupo 4** (dinero en
+USD/float) — 5+ días sin tocar su contrato, y es el único punto que de
+verdad corrompe un cálculo real. **Nuevo urgente:** la URL muerta de
+Grupo 2 — a diferencia de G4 (que nunca tuvo despliegue real), G2 sí
+tenía una URL viva que el BFF ya estaba usando, y cambió sin aviso.

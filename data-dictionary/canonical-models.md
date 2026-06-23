@@ -126,12 +126,10 @@ su cuenta. Detalle completo en `services/group-6-despacho/README.md`.
 | `status` | `PENDING/IN_TRANSIT/DELIVERED/CANCELLED/FAILED/RETURNED` | ✅ (sin cambios respecto a v1.0) |
 | `estimatedDelivery` | date-time, nullable | ✅ |
 
-**Gap puntual (no de convención, sino un bug):** `GET /shipments?orderId=`
-devuelve los campos en snake_case (`shipment_id`, `order_id`...) en vez de
-camelCase, porque ese endpoint específico construye la respuesta como un
-dict plano sin pasar por el modelo Pydantic que usa el resto de los
-endpoints. Reportado a G6 — no bloquea, pero el BFF debe normalizar esa
-respuesta puntual mientras lo corrigen.
+**Resuelto 2026-06-23:** `GET /shipments?orderId=` ya devuelve camelCase
+en todos sus campos — el bug puntual reportado a G6 quedó corregido.
+Ahora exigen además los headers `X-Request-Id`/`X-Correlation-Id`/`X-Consumer`
+como obligatorios en todos los endpoints (antes no lo eran).
 
 ## Notification (dueño: Grupo 8 — Notificaciones)
 
