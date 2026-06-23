@@ -8,9 +8,6 @@ pero hoy solo contiene un documento de arquitectura en `.docx` con un
 contrato REST y de eventos descrito en texto (4 endpoints `GET/POST
 /reports/*`, 4 eventos consumidos), no un OpenAPI real.
 
-Ver el resumen extraído en `analisis-integration-hell-2026-06-18.md`
-(sección 4.8) en la raíz de este repo.
-
 **Actualización 2026-06-19:** Grupo 1 formalizó como `openapi.yaml`
 **borrador** el contrato que ya estaba descrito en el `.docx` de Grupo 7,
 ajustado a las convenciones del proyecto (IDs `ORD-YYYYMMDD-NNN`, dinero

@@ -1,25 +1,37 @@
 # Grupo 5 — Pedidos (Order Management)
 
-**Estado: sin contrato publicado aquí todavía.**
+**Estado (2026-06-21): contrato real publicado por Grupo 5.**
 
-Este grupo no tiene repo de servicio en la organización GitHub ni un
-`openapi.yaml` publicado. Su única documentación hoy vive en archivos
-locales de Office (arquitectura, contrato REST y contrato de eventos en
-`.md`/`.pdf`/`.docx`), y esos documentos se contradicen entre sí en varios
-puntos (formato de `orderId`, casing de `OrderStatus`, nombre de eventos).
+El `openapi.yaml` y `events.md` en esta carpeta son una copia directa de
+lo que Grupo 5 publicó en su propio repo
+([`Grupo5-Pedidos`](https://github.com/Mini-Marketplace-Cloud-UTEM/Grupo5-Pedidos),
+carpeta `contrato/`). Reemplaza por completo el borrador `0.1.0-draft`
+que Grupo 1 había dejado acá como punto de partida.
 
-Ver el detalle completo en `analisis-integration-hell-2026-06-18.md`
-(sección 4.1) en la raíz de este repo.
+## Qué cambió respecto al borrador
 
-**Actualización 2026-06-19:** Grupo 1 redactó un `openapi.yaml`
-**borrador** en esta misma carpeta, como punto de partida (no como
-contrato impuesto) — fija el formato de `orderId` (`ORD-YYYYMMDD-NNN`,
-reemplazando los 3 formatos distintos que había), corrige el casing de
-`OrderStatus` a `UPPER_SNAKE_CASE` consistente, y agrega paginación al
-listado de pedidos por usuario.
+Grupo 5 adoptó el borrador casi sin cambios y queda **100% alineado** a
+`decisiones-ejecutivas-2026-06-19.md`:
 
-**Acción pendiente:** Grupo 5 debe revisar ese borrador, ajustarlo a su
-realidad de implementación, y subir la versión final (o una distinta, si
-no les acomoda) a `services/group-5-pedidos/openapi.yaml`. También falta
-el contrato de eventos formal si difiere de lo descrito en `x-events` del
-borrador.
+- `orderId` con formato `ORD-YYYYMMDD-NNN` (mismo patrón que G6/G8).
+- camelCase en todo el contrato público.
+- Error corto vía `$ref` a `shared/components.yaml#/Error`.
+- Paginación estándar (`{data, pagination: {...}}`) vía `$ref` a
+  `shared/components.yaml#/Pagination` en `GET /users/{userId}/orders`.
+- Dinero `integer`, moneda `[CLP]`.
+- Confirma explícitamente que **no orquesta checkout** — `POST /orders`
+  es invocado por Grupo 4 después de reservar stock, no por el frontend
+  ni por el BFF directamente.
+- JWT validado vía `POST /auth/validate` de Grupo 2 (no verificación
+  local de firma).
+
+## Pendiente
+
+- Confirmar URL real en Render y actualizar
+  `marketplace-contracts/registro-de-servicios.md` (hoy declara
+  `https://api-grupo5-pedidos.onrender.com/v1` como placeholder a
+  confirmar).
+- `OrderStatus` mantiene `STOCK_RESERVED` "por compatibilidad" aunque en
+  la práctica el stock ya lo reserva G4 antes de crear el pedido — no es
+  un bloqueante, solo una nota de diseño que dejaron ellos mismos en el
+  contrato.
