@@ -18,7 +18,7 @@ ese grupo si existe (ver `data-dictionary/guia-y-lineamiento-de-desarrollo.md`, 
 | 5 | Pedidos | `https://api-grupo5-pedidos.onrender.com/v1` (declarada en su contrato, despliegue sin confirmar) | _pendiente_ | 🟡 Contrato real ya publicado, falta confirmar que esté desplegada |
 | 6 | Despacho | `https://g6-despacho.onrender.com` | — | ✅ Desplegado y probado en vivo. Actualizado 2026-06-23: corrigieron el bug de naming y ahora exigen `X-Request-Id`/`X-Correlation-Id`/`X-Consumer` como obligatorios en todos los endpoints. |
 | 7 | Reportería | _pendiente_ (`api-reporteria-g7.render.com` declarado en su `openapi.yaml` no funciona todavía) | https://grupo-7-reporter-a-bash-y-streaming-production.up.railway.app/docs  | 🟡 Tienen un servicio real construido (FastAPI + Postgres + worker Pub/Sub + tests), pero sin desplegar. Ver `services/group-7-reporteria/README.md`. |
-| 8 | Pagos/Notificaciones | Render: https://g8-pagos-y-notificaciones.onrender.com/docs | 🔴 Por problemas con Render hay errores en 3 endpoints de pago relacionados con autorización de tokens JWT, pero al correrlos en terminal funcionan bien |
+| 8 | Pagos/Notificaciones | Render: https://g8-pagos-y-notificaciones.onrender.com/docs | | 🔴 Por problemas con Render hay errores en 3 endpoints de pago relacionados con autorización de tokens JWT, pero al correrlos en terminal funcionan bien |
 
 ## Cómo actualizar esta tabla
 
