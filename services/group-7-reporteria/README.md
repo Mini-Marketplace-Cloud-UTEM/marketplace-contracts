@@ -1,36 +1,37 @@
 # Grupo 7 — Reportería, Bash y Streaming
 
-**Estado (2026-06-23): construyeron un servicio real completo, pero el
-contrato (forma de error/paginación) no se corrigió y no hay despliegue.**
+**Estado (2026-06-23): servicio real desplegado en Railway y ya
+integrado en el BFF (`/v1/admin/reports/*`).**
 
-El repo de servicio es
-[`Grupo-7-Reporter-a-bash-y-Streaming`](https://github.com/Mini-Marketplace-Cloud-UTEM/Grupo-7-Reporter-a-bash-y-Streaming).
-Pasaron de tener solo un `.docx` de arquitectura (antes del 19-jun) a un
-servicio FastAPI real: rutas (`app/api/routes/reports.py`, `batch.py`),
-capa de servicios, conexión async a Postgres/Supabase, un **worker de
-Pub/Sub** (`app/workers/pubsub_consumer.py`), migraciones SQL, Docker y
-tests pytest.
+URL real: `https://grupo-7-reporter-a-bash-y-streaming-production.up.railway.app`
+(`/docs` para el Swagger interactivo). Nota: **Railway, no Render** —
+no usar la URL vieja `api-reporteria-g7.render.com`.
 
-## Lo que falta corregir (sin cambios desde el 2026-06-20)
+## Endpoints confirmados en vivo (2026-06-23)
 
-El borrador `openapi.yaml` que dejamos en esta carpeta fue ajustado
-parcialmente por Bastian Encina el 20 de junio, pero ese ajuste **nunca
-llegó al código real** (`app/schemas/responses.py`):
+| Endpoint | Descripción |
+|---|---|
+| `GET /reports/sales` | resumen financiero (`from`/`to` opcionales) |
+| `GET /reports/orders-by-status` | conteo de pedidos por estado |
+| `GET /reports/top-products` | ranking paginado (`page`/`pageSize`) |
+| `GET /reports/average-ticket` | ticket promedio |
+| `GET /reports/peak-hours` | distribución de pedidos por hora (0-23) |
+| `GET /reports/delivery-performance` | tiempo promedio de entrega |
+| `POST /reports/batch/recalculate` | recálculo batch asíncrono (requiere `Idempotency-Key`) |
 
-- `ErrorResponse` sigue con `timestamp`, `status`, `code`, `message`,
-  `correlationId` (versión larga) — debía ser `{code, message, details?,
-  correlationId?}`.
-- `Pagination` sigue con `totalItems`, `totalPages`, `currentPage`,
-  `pageSize` — debía ser `{data, pagination: {page, pageSize, total,
-  totalPages, hasNext, hasPrev}}`.
-- `orderId` acepta ambos formatos (`ORD-1001` y `ORD-YYYYMMDD-NNN`) —
-  falta dejar solo el segundo.
+Todos (salvo `/health`) exigen `X-Request-Id`/`X-Correlation-Id`/`X-Consumer`
+como headers obligatorios. **Ninguno valida JWT/Authorization** — el
+control de acceso queda del lado del BFF (implementado como rol `admin`).
 
-## Sin despliegue real
+## Pendiente de corregir (confirmado vigente, sin cambios desde el 20-jun)
 
-El `openapi.yaml` declara `https://api-reporteria-g7.render.com` con el
-comentario explícito "esto no funciona aún porque no tenemos un render".
-No hay URL real que probar todavía.
+- `Pagination` de `top-products` sigue con `totalItems`, `totalPages`,
+  `currentPage`, `pageSize` — no `{page, pageSize, total, totalPages,
+  hasNext, hasPrev}`. El BFF ya traduce esto en su capa
+  (`Grupo-1-BFF/app/routers/reports.py`).
+- No hay forma de error custom documentada — solo el `422` nativo de
+  FastAPI para validación. No se confirmó cómo responden otros códigos
+  de error (404, 500) en producción.
 
 ## Mecanismo de testing interesante: `USE_MOCKS` / `X-MOCK-HTTP-STATUS`
 

@@ -17,7 +17,7 @@ reunión.
 | 4 | Carro/Checkout/Inventario | `services/group-4-carrito/openapi.yaml` | ⚠️ Completo en forma, pero bloqueante de dinero (USD/float) sin corregir, sin despliegue real |
 | 5 | Pedidos | `services/group-5-pedidos/openapi.yaml` | ✅ Completo (repo `Grupo5-Pedidos`, publicado 2026-06-21 — reemplaza el borrador de Grupo 1) |
 | 6 | Despacho | `services/group-6-despacho/openapi.yaml` | ✅ Código real (`G6-Shipment-Service`) implementa **v1.2**, bug de naming corregido 2026-06-23, tests pytest agregados |
-| 7 | Reportería | `services/group-7-reporteria/openapi.yaml` | 🟡 Servicio real construido (FastAPI+Postgres+Pub/Sub+tests), pero error/paginación del código sin corregir y sin desplegar |
+| 7 | Reportería | `services/group-7-reporteria/openapi.yaml` | 🟡 Desplegado en Railway y confirmado en vivo (2026-06-23), ya integrado en el BFF; paginación del código sin corregir |
 | 8 | Pagos/Notificaciones | `services/group-8-pagos/openapi.yaml` | 🟡 Completo, pero regresión puntual 2026-06-23 en validación de `Idempotency-Key` de Pagos (ver `services/group-8-pagos/README.md`) |
 
 ---
@@ -181,7 +181,7 @@ real de cada contrato a la fecha:
 | 4 | ❌ pendiente (sigue `error`, `details` objeto libre) | ❌ pendiente (USD/float, sin cambios desde 2026-06-18, 5+ días) | N/A | ✅ | N/A |
 | 5 | ✅ (contrato real propio, 2026-06-21) | ✅ | ✅ | ✅ | ✅ |
 | 6 | ✅ (v1.2) | ✅ (v1.2) | ✅ (v1.2) | ✅ **bug de naming corregido 2026-06-23** | ✅ |
-| 7 | ❌ pendiente (servicio real construido, pero sigue con `timestamp`/`status` en el código) | ✅ | ❌ pendiente (`totalItems`/`currentPage`, sin `data`/`pagination`) | ✅ | ⚠️ acepta ambos formatos, falta dejar solo uno |
+| 7 | N/A (no documenta forma de error custom, solo 422 nativo de validación) | ✅ | ❌ pendiente (`totalItems`/`currentPage`, traducido por el BFF) | ✅ | N/A (Reportería no expone `orderId`) |
 | 8 | ⚠️ **regresión 2026-06-23**: PR de Pagos quitó la validación manual de `Idempotency-Key`, ahora da 422 genérico de FastAPI en ese caso puntual | ✅ | ✅ (Pagos y Notificaciones E2, consistentes entre sí) | ✅ | ✅ |
 
 **Hallazgos nuevos de la ronda de revisión post-reunión (2026-06-23):**

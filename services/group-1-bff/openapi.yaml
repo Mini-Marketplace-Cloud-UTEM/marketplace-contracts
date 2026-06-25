@@ -479,6 +479,196 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ── Admin / Reportería (proxy hacia Grupo 7) ────────────────────────────
+  /admin/reports/sales:
+    get:
+      tags: [Admin Reports]
+      summary: Resumen financiero consolidado
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getSalesReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Resumen de ventas del período
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/orders-by-status:
+    get:
+      tags: [Admin Reports]
+      summary: Conteo de pedidos por estado
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getOrdersByStatusReport
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de conteos por estado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderStatusCount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/top-products:
+    get:
+      tags: [Admin Reports]
+      summary: Productos más vendidos
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getTopProductsReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Lista paginada de productos más vendidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopProductsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/average-ticket:
+    get:
+      tags: [Admin Reports]
+      summary: Ticket promedio de compra
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getAverageTicketReport
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Ticket promedio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AverageTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/peak-hours:
+    get:
+      tags: [Admin Reports]
+      summary: Franjas horarias con mayor volumen de transacciones
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getPeakHoursReport
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Distribución de pedidos por hora del día
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeakHourItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/delivery-performance:
+    get:
+      tags: [Admin Reports]
+      summary: Tiempos promedio de entrega
+      description: Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+      operationId: getDeliveryPerformanceReport
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Métricas consolidadas de despacho
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryPerformanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/batch/recalculate:
+    post:
+      tags: [Admin Reports]
+      summary: Forzar recálculo batch de reportería (asíncrono)
+      description: |
+        Requiere rol `admin`. Proxy hacia el servicio de Reportería (Grupo 7).
+        Encola un recálculo completo de las agregaciones analíticas.
+      operationId: triggerBatchRecalculate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Si no se envía, el BFF genera una automáticamente.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRecalculateRequest'
+      responses:
+        '202':
+          description: Recálculo encolado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRecalculateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 # ─────────────────────────────────────────────────────────────────────────
 # COMPONENTS
 # ─────────────────────────────────────────────────────────────────────────
@@ -847,6 +1037,131 @@ components:
             $ref: '#/components/schemas/Order'
         pagination:
           $ref: '#/components/schemas/Pagination'
+
+    # ── Admin Reports (proxy hacia Grupo 7) ────────
+    SalesPeriod:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+          nullable: true
+        to:
+          type: string
+          format: date
+          nullable: true
+
+    SalesReport:
+      type: object
+      required: [period, totalSales, totalOrders, currency]
+      properties:
+        period:
+          $ref: '#/components/schemas/SalesPeriod'
+        totalSales:
+          type: integer
+          description: Monto total de ventas en CLP
+          example: 4599800
+        totalOrders:
+          type: integer
+          example: 87
+        currency:
+          type: string
+          enum: [CLP]
+          default: CLP
+
+    OrderStatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+          example: DELIVERED
+        count:
+          type: integer
+          example: 42
+
+    TopProduct:
+      type: object
+      required: [productId, unitsSold, revenue]
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+          nullable: true
+        unitsSold:
+          type: integer
+        revenue:
+          type: integer
+          description: Ingresos generados en CLP
+
+    TopProductsResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopProduct'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    AverageTicketResponse:
+      type: object
+      required: [averageTicket]
+      properties:
+        averageTicket:
+          type: integer
+          description: Valor promedio por pedido en CLP
+          example: 49990
+        currency:
+          type: string
+          enum: [CLP]
+          default: CLP
+
+    PeakHourItem:
+      type: object
+      required: [hour, orderCount]
+      properties:
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        orderCount:
+          type: integer
+
+    DeliveryPerformanceResponse:
+      type: object
+      required: [avgDeliveryTimeMinutes, totalDeliveredCount]
+      properties:
+        avgDeliveryTimeMinutes:
+          type: integer
+        totalDeliveredCount:
+          type: integer
+
+    BatchRecalculateRequest:
+      type: object
+      nullable: true
+      properties:
+        from:
+          type: string
+          format: date
+          nullable: true
+        to:
+          type: string
+          format: date
+          nullable: true
+
+    BatchRecalculateResponse:
+      type: object
+      required: [jobId]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          default: QUEUED
 
     # ── Shared ────────────────────────────────────
     Pagination:
