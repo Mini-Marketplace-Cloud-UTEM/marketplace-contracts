@@ -32,15 +32,6 @@ npx @redocly/cli lint services/group-1-bff/openapi.yaml
 npx @stoplight/spectral-cli lint services/group-1-bff/openapi.yaml
 ```
 
-## Documentos de análisis (raíz del repo)
-
-- `matriz-conflictos-contratos.md` — tabla de referencia rápida: qué
-  contrato existe hoy, en qué choca cada uno contra los demás, y un
-  checklist de qué grupo ya corrigió qué (sección 5).
-- `decisiones-ejecutivas-2026-06-19.md` — las 9 decisiones que resuelven
-  los conflictos de la matriz, listas para validar satisfacción de cada
-  grupo en la reunión.
-
 ## Cómo subir tu contrato
 
 1. Tu `openapi.yaml` real (el que tu servicio efectivamente implementa,

@@ -154,6 +154,7 @@ paths:
           required: false
           schema:
             type: integer
+            format: int64
             minimum: 0
             example: 5000
         - name: maxPrice
@@ -162,6 +163,7 @@ paths:
           required: false
           schema:
             type: integer
+            format: int64
             minimum: 0
             example: 100000
         - name: page
@@ -760,6 +762,7 @@ components:
           example: zapatillas-running-pro
         price:
           type: integer
+          format: int64
           example: 49990
         currency:
           type: string
@@ -825,9 +828,11 @@ components:
               nullable: true
             minPrice:
               type: integer
+              format: int64
               nullable: true
             maxPrice:
               type: integer
+              format: int64
               nullable: true
 
     Category:
@@ -865,11 +870,13 @@ components:
           format: uri
         unitPrice:
           type: integer
+          format: int64
         quantity:
           type: integer
           minimum: 1
         subtotal:
           type: integer
+          format: int64
 
     Cart:
       type: object
@@ -888,6 +895,7 @@ components:
           type: integer
         totalPrice:
           type: integer
+          format: int64
         currency:
           type: string
           enum: [CLP]
@@ -948,10 +956,12 @@ components:
           format: uri
         unitPrice:
           type: integer
+          format: int64
         quantity:
           type: integer
         subtotal:
           type: integer
+          format: int64
 
     ShippingAddress:
       type: object
@@ -994,10 +1004,13 @@ components:
           type: integer
         subtotal:
           type: integer
+          format: int64
         shippingCost:
           type: integer
+          format: int64
         total:
           type: integer
+          format: int64
         currency:
           type: string
           enum: [CLP]
@@ -1059,6 +1072,7 @@ components:
           $ref: '#/components/schemas/SalesPeriod'
         totalSales:
           type: integer
+          format: int64
           description: Monto total de ventas en CLP
           example: 4599800
         totalOrders:
@@ -1093,6 +1107,7 @@ components:
           type: integer
         revenue:
           type: integer
+          format: int64
           description: Ingresos generados en CLP
 
     TopProductsResponse:
@@ -1112,6 +1127,7 @@ components:
       properties:
         averageTicket:
           type: integer
+          format: int64
           description: Valor promedio por pedido en CLP
           example: 49990
         currency:

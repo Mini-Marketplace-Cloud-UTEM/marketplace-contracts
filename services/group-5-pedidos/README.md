@@ -11,7 +11,8 @@ que Grupo 1 había dejado acá como punto de partida.
 ## Qué cambió respecto al borrador
 
 Grupo 5 adoptó el borrador casi sin cambios y queda **100% alineado** a
-`decisiones-ejecutivas-2026-06-19.md`:
+las convenciones del proyecto (ver
+`data-dictionary/guia-y-lineamiento-de-desarrollo.md`):
 
 - `orderId` con formato `ORD-YYYYMMDD-NNN` (mismo patrón que G6/G8).
 - camelCase en todo el contrato público.
@@ -44,12 +45,31 @@ explícitamente que la sincronizan a mano.
 
 ## Pendiente
 
-- Confirmar URL real en Render: `https://api-grupo5-pedidos.onrender.com/v1`
-  responde (no está caída/DNS muerto), pero solo devuelve 404 en la raíz
-  y en `/orders` — no se pudo confirmar si el contrato real ya está
-  desplegado o si es solo la página default de Render. Falta probar un
-  endpoint válido con autenticación.
 - `OrderStatus` mantiene `STOCK_RESERVED` "por compatibilidad" aunque en
   la práctica el stock ya lo reserva G4 antes de crear el pedido — no es
   un bloqueante, solo una nota de diseño que dejaron ellos mismos en el
   contrato.
+
+## Actualización 2026-06-28 — el servicio real en vivo es otro, más chico
+
+La URL `api-grupo5-pedidos.onrender.com` (la del contrato copiado arriba)
+ya no es la que está en producción. El servicio real verificado hoy es:
+
+`https://grupo5-pedidos-mock-kdyl.onrender.com` (`/docs` para Swagger)
+
+Es explícitamente un **mock** ("Mock oficial para desbloquear a G4 y
+G1", versión 1.2.0) y solo expone **un endpoint real**: `POST /orders`.
+No hay `GET /orders` ni `GET /orders/{id}` todavía — el BFF no puede
+listar ni consultar pedidos contra este servicio hoy, solo crearlos.
+
+Lo que sí se confirmó en vivo y coincide con lo documentado arriba:
+- `orderId` con formato `ORD-YYYYMMDD-NNN` ✅ (probado: `ORD-20260626-001`)
+- Dinero como `integer`, sin decimales ✅
+- `status: "CREATED"` ✅ (coincide con la tabla de equivalencia de
+  `guia-y-lineamiento-de-desarrollo.md`)
+- Naming 100% camelCase ✅
+- `Idempotency-Key` obligatorio en la creación ✅
+
+**Acción pendiente de Grupo 5:** publicar `GET /orders` y
+`GET /orders/{orderId}` — sin esos dos el BFF solo puede crear pedidos,
+no mostrarlos al usuario.

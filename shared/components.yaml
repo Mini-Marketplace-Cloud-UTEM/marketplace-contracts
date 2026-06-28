@@ -82,11 +82,16 @@ components:
       type: object
       required: [amount, currency]
       description: >
-        El dinero SIEMPRE es entero (CLP no tiene decimales). Nunca usar
-        `number`/`float`/`double` para montos.
+        Actualizado 2026-06-28 por requerimiento directo del evaluador de
+        la asignatura: el ancho del entero pasa de 32 a 64 bits
+        (`integer`/`int64`, "long"). Sigue siendo un entero, NUNCA
+        `number`/`float`/`double` — CLP no tiene decimales. Reemplaza la
+        convención anterior (ver
+        `data-dictionary/guia-y-lineamiento-de-desarrollo.md`, sección 2).
       properties:
         amount:
           type: integer
+          format: int64
           description: Monto en la unidad mínima de la moneda (sin decimales).
           example: 49990
         currency:

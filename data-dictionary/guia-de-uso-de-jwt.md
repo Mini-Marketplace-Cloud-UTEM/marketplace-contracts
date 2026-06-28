@@ -71,3 +71,27 @@ servicio de Auth en cada request. No es un requisito obligatorio.
 Si el servicio de Auth no responde, todo el sistema rechaza los requests
 autenticados — no existe un modo degradado que permita continuar sin
 validación.
+
+## Autorización para mutaciones administrativas
+
+Aplica a **cualquier endpoint que cree, edite o elimine algo en nombre de
+un administrador**: usuarios, contraseñas, productos, inventario, etc.
+No alcanza con validar que el token sea válido — hay que confirmar que
+quien lo presenta tiene rol `admin` antes de ejecutar la acción.
+
+1. El request llega con `Authorization: Bearer <token>` (igual que
+   cualquier endpoint autenticado — ver arriba). El servicio que recibe
+   la mutación llama a `POST /auth/validate` con ese mismo token.
+2. Si la respuesta no incluye `admin` en `user.roles`, el servicio
+   rechaza con `403` y el `Error` estándar:
+   `{code: "FORBIDDEN", message: "Se requiere rol admin."}`.
+3. Solo si el rol viene confirmado por Auth, el servicio ejecuta la
+   mutación.
+
+**Regla dura: el campo de identidad nunca es un dato del body.** Un
+`userId`/`requestedBy` suelto en el JSON del request no prueba nada — lo
+puede escribir cualquiera, incluso quien no es admin. La única prueba de
+identidad válida es el JWT, porque lo firmó Auth y se valida contra
+Auth. Si un endpoint de mutación hoy solo recibe "un id y qué hacer con
+él" sin pasar por este flujo, no cumple el contrato de seguridad y debe
+corregirse.
